@@ -75,7 +75,7 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
       const item = exactMatches[0];
       
       // Check if there are any ideas associated with this item
-      if (item.ideas && item.ideas.length > 0) {
+      if (item.ideas && Array.isArray(item.ideas) && item.ideas.length > 0) {
         // Get the first idea with actual idea data
         const ideaData = item.ideas.find(i => i.ideas && Array.isArray(i.ideas) && i.ideas.length > 0);
         
@@ -85,7 +85,9 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
           
           return {
             itemName: item.name,
+            // Use the description for suggestions, split by newlines
             suggestions: idea.description.split('\n').filter(Boolean),
+            // Use the instructions field for howTo, not the description
             howTo: idea.instructions,
             isGeneric: false,
             timeRequired: idea.time_required,
