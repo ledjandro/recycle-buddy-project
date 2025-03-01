@@ -38,16 +38,6 @@ const ResultCard: React.FC<ResultCardProps> = ({
         className
       )}
     >
-      {coverImageUrl && !isGeneric && (
-        <div className="w-full h-48 overflow-hidden">
-          <img 
-            src={coverImageUrl} 
-            alt={`Recycling idea for ${itemName}`} 
-            className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
-          />
-        </div>
-      )}
-      
       <div className="p-6 md:p-8">
         <div className="flex items-start justify-between">
           <div>

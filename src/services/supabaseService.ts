@@ -45,11 +45,9 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
         material_type,
         difficulty_level,
         image_url,
-        items_ideas(
-          idea_id
-        ),
         ideas:items_ideas(
-          ideas(
+          idea_id,
+          ideas:idea_id(
             id,
             title,
             description,
@@ -76,29 +74,23 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
       
       // Check if there are any ideas associated with this item
       if (item.ideas && Array.isArray(item.ideas) && item.ideas.length > 0) {
-        // Flatten the nested ideas structure to access the actual idea objects
-        const allIdeas = item.ideas
-          .filter(ideaItem => ideaItem.ideas && typeof ideaItem.ideas === 'object')
-          .map(ideaItem => ideaItem.ideas);
-        
-        // If we have valid ideas, use the first one
-        if (allIdeas.length > 0) {
-          const idea = allIdeas[0];
-          console.log("Found idea:", idea);
-          
-          // Make sure we have a valid idea object
-          if (idea && idea.title) {
-            return {
-              itemName: item.name,
-              // Use proper suggestions from idea description
-              suggestions: idea.description.split('\n').filter(Boolean),
-              // Use the instructions field for howTo
-              howTo: idea.instructions,
-              isGeneric: false,
-              timeRequired: idea.time_required,
-              difficultyLevel: idea.difficulty_level,
-              coverImageUrl: idea.cover_image_url
-            };
+        // Find the first idea with valid nested idea data
+        for (const ideaRelation of item.ideas) {
+          if (ideaRelation.ideas && typeof ideaRelation.ideas === 'object') {
+            const idea = ideaRelation.ideas;
+            console.log("Found idea:", idea);
+            
+            if (idea && idea.id) {
+              return {
+                itemName: item.name,
+                suggestions: idea.description.split('\n').filter(Boolean),
+                howTo: idea.instructions,
+                isGeneric: false,
+                timeRequired: idea.time_required,
+                difficultyLevel: idea.difficulty_level,
+                coverImageUrl: idea.cover_image_url
+              };
+            }
           }
         }
       }
