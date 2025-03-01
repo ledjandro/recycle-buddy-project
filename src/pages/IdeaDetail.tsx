@@ -12,7 +12,7 @@ const IdeaDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const ideaData = location.state as SearchResult | null;
-  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState<string>("all");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
 
@@ -37,14 +37,13 @@ const IdeaDetail = () => {
     setSelectedTag(tag);
     
     // If no tag is selected (showing all), reset to all suggestions
-    if (!tag) {
+    if (tag === "all") {
       setFilteredSuggestions(ideaData.suggestions);
       return;
     }
     
     // This is a placeholder for tag filtering logic
     // In a real app, you would have tag-specific suggestions in your data model
-    // For now, we just pretend to filter based on the selected tag
     const tagRelatedSuggestions = ideaData.suggestions.filter(
       (_, index) => index % 2 === (tag === availableTags[0] ? 0 : 1)
     );
@@ -82,7 +81,7 @@ const IdeaDetail = () => {
                 <SelectValue placeholder="Select a tag" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Tags</SelectItem>
+                <SelectItem value="all">All Tags</SelectItem>
                 {availableTags.map((tag) => (
                   <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                 ))}

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const Index = () => {
   const [materialTypes, setMaterialTypes] = useState<string[]>([]);
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('');
+  const [selectedMaterial, setSelectedMaterial] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   
   const { toast } = useToast();
@@ -39,7 +39,7 @@ const Index = () => {
     
     try {
       // If material type is selected, use it in the search
-      const materialFilter = selectedMaterial || undefined;
+      const materialFilter = selectedMaterial !== "all" ? selectedMaterial : undefined;
       const result = await searchRecyclingItems(query, materialFilter);
       
       if (result) {
@@ -99,7 +99,7 @@ const Index = () => {
                   <SelectValue placeholder="Select a material type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Materials</SelectItem>
+                  <SelectItem value="all">All Materials</SelectItem>
                   {materialTypes.map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
