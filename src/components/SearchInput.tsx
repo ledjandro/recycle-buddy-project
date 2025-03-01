@@ -1,25 +1,27 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 
 interface SearchInputProps {
   onSearch: (query: string) => void;
   className?: string;
   placeholder?: string;
+  isLoading?: boolean;
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
   onSearch,
   className,
-  placeholder = "Enter an item (e.g., water bottle, newspaper, old t-shirt)"
+  placeholder = "Enter an item (e.g., water bottle, newspaper, old t-shirt)",
+  isLoading = false
 }) => {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = () => {
-    if (query.trim()) {
+    if (query.trim() && !isLoading) {
       onSearch(query);
     }
   };
@@ -63,18 +65,23 @@ const SearchInput: React.FC<SearchInputProps> = ({
           placeholder={placeholder}
           className="flex-1 px-4 py-4 md:py-5 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/70"
           aria-label="Search for items to recycle"
+          disabled={isLoading}
         />
         <button
           onClick={handleSearch}
           className={cn(
             "flex items-center justify-center h-full aspect-square bg-primary text-primary-foreground transition-all",
             "hover:bg-primary/90 active:bg-primary/80",
-            query.trim() === "" ? "opacity-70 cursor-not-allowed" : "opacity-100"
+            (query.trim() === "" || isLoading) ? "opacity-70 cursor-not-allowed" : "opacity-100"
           )}
-          disabled={query.trim() === ""}
+          disabled={query.trim() === "" || isLoading}
           aria-label="Search"
         >
-          <Search className="w-5 h-5" />
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Search className="w-5 h-5" />
+          )}
         </button>
       </div>
       <div className="absolute inset-0 -z-10 rounded-2xl bg-primary/5 blur-xl opacity-50 transform scale-95"></div>

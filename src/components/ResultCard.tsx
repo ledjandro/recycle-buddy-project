@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Info } from 'lucide-react';
+import { Info, Clock, BarChart2 } from 'lucide-react';
 
 interface ResultCardProps {
   itemName: string;
@@ -10,15 +10,20 @@ interface ResultCardProps {
   howTo: string;
   isGeneric?: boolean;
   className?: string;
+  timeRequired?: number | null;
+  difficultyLevel?: number | null;
+  coverImageUrl?: string | null;
 }
 
-// Using framer-motion to create beautiful animations
 const ResultCard: React.FC<ResultCardProps> = ({
   itemName,
   suggestions,
   howTo,
   isGeneric = false,
-  className
+  className,
+  timeRequired,
+  difficultyLevel,
+  coverImageUrl
 }) => {
   return (
     <motion.div
@@ -33,6 +38,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
         className
       )}
     >
+      {coverImageUrl && !isGeneric && (
+        <div className="w-full h-48 overflow-hidden">
+          <img 
+            src={coverImageUrl} 
+            alt={`Recycling idea for ${itemName}`} 
+            className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
+          />
+        </div>
+      )}
+      
       <div className="p-6 md:p-8">
         <div className="flex items-start justify-between">
           <div>
@@ -47,6 +62,25 @@ const ResultCard: React.FC<ResultCardProps> = ({
             </h2>
           </div>
         </div>
+
+        {!isGeneric && (
+          <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
+            {timeRequired && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                <span>{timeRequired} mins</span>
+              </div>
+            )}
+            {difficultyLevel && (
+              <div className="flex items-center gap-1">
+                <BarChart2 className="w-4 h-4" />
+                <span>
+                  Difficulty: {difficultyLevel}/5
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <ul className="mt-6 space-y-3">
           {suggestions.map((suggestion, index) => (
@@ -76,7 +110,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
               <Info className="w-5 h-5 text-primary mt-0.5 mr-3 flex-shrink-0" />
               <div>
                 <h4 className="font-medium text-foreground mb-1">How to do it:</h4>
-                <p className="text-muted-foreground text-sm">{howTo}</p>
+                <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
               </div>
             </div>
           </motion.div>

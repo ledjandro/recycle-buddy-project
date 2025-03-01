@@ -1,59 +1,56 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { recyclingDatabase, findBestMatch } from '@/utils/recyclingData';
 import Header from '@/components/Header';
 import SearchInput from '@/components/SearchInput';
 import ResultCard from '@/components/ResultCard';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import { useToast } from '@/components/ui/use-toast';
+import { searchRecyclingItems, SearchResult } from '@/services/supabaseService';
 
 const Index = () => {
-  const [searchResult, setSearchResult] = useState<{
-    itemName: string;
-    suggestions: string[];
-    howTo: string;
-    isGeneric: boolean;
-  } | null>(null);
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [loading, setLoading] = useState(false);
   
   const { toast } = useToast();
 
-  const handleSearch = (query: string) => {
-    const { match, score } = findBestMatch(query);
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) return;
     
-    if (match && (score > 0.5 || query === match)) {
-      const data = recyclingDatabase[match];
-      setSearchResult({
-        itemName: match,
-        suggestions: data.suggestions,
-        howTo: data.howTo,
-        isGeneric: false
-      });
+    setLoading(true);
+    
+    try {
+      const result = await searchRecyclingItems(query);
       
+      if (result) {
+        setSearchResult(result);
+        
+        toast({
+          title: result.isGeneric ? "No exact match found" : "Item found!",
+          description: result.isGeneric 
+            ? "Here are some general recycling tips instead." 
+            : `Here are some recycling ideas for ${result.itemName}.`,
+          duration: 3000,
+        });
+      } else {
+        // Handle case where no result is returned
+        toast({
+          title: "Search error",
+          description: "We couldn't process your search. Please try again.",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Search error:", error);
       toast({
-        title: "Item found!",
-        description: `Here are some recycling ideas for ${match}.`,
+        title: "Search error",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive",
         duration: 3000,
       });
-    } else {
-      // Show generic suggestions
-      setSearchResult({
-        itemName: query,
-        suggestions: [
-          "Check if your local recycling center accepts this material",
-          "Consider donating if the item is still in good condition",
-          "Search online for DIY upcycling projects specific to your item",
-          "For electronics, look for e-waste recycling programs in your area"
-        ],
-        howTo: "Always check with your local recycling guidelines to ensure proper disposal of items that cannot be repurposed.",
-        isGeneric: true
-      });
-      
-      toast({
-        title: "No exact match found",
-        description: "Here are some general recycling tips instead.",
-        duration: 3000,
-      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,7 +62,7 @@ const Index = () => {
         <Header />
         
         <div className="mt-8 md:mt-12 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <SearchInput onSearch={handleSearch} />
+          <SearchInput onSearch={handleSearch} isLoading={loading} />
         </div>
         
         <AnimatePresence mode="wait">
@@ -76,6 +73,9 @@ const Index = () => {
               suggestions={searchResult.suggestions}
               howTo={searchResult.howTo}
               isGeneric={searchResult.isGeneric}
+              timeRequired={searchResult.timeRequired}
+              difficultyLevel={searchResult.difficultyLevel}
+              coverImageUrl={searchResult.coverImageUrl}
             />
           )}
         </AnimatePresence>
