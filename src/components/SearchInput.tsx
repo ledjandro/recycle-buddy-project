@@ -5,6 +5,7 @@ import { Search, Loader2 } from 'lucide-react';
 
 interface SearchInputProps {
   onSearch: (query: string) => void;
+  onInputChange?: (value: string) => void;
   className?: string;
   placeholder?: string;
   isLoading?: boolean;
@@ -12,6 +13,7 @@ interface SearchInputProps {
 
 const SearchInput: React.FC<SearchInputProps> = ({
   onSearch,
+  onInputChange,
   className,
   placeholder = "Enter an item (e.g., water bottle, newspaper, old t-shirt)",
   isLoading = false
@@ -29,6 +31,14 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setQuery(newValue);
+    if (onInputChange) {
+      onInputChange(newValue);
     }
   };
 
@@ -58,7 +68,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}

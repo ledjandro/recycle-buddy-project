@@ -22,6 +22,9 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [materialItems, setMaterialItems] = useState<RecyclingItem[]>([]);
   const [showingSuggestions, setShowingSuggestions] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<{id: string; name: string; materialType: string}[]>([]);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -60,6 +63,49 @@ const Index = () => {
     
     loadItemsByMaterialType();
   }, [selectedMaterial]);
+
+  // New effect to handle search suggestions as user types
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+    
+    // Clear any existing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    
+    // Set a new timeout to delay the search
+    const timeout = setTimeout(async () => {
+      setLoading(true);
+      try {
+        // If material type is selected, use it in the search
+        const materialFilter = selectedMaterial !== "all" ? selectedMaterial : undefined;
+        const result = await searchRecyclingItems(searchQuery, materialFilter);
+        
+        if (result && result.similarItems && result.similarItems.length > 0) {
+          setSearchSuggestions(result.similarItems);
+        } else {
+          setSearchSuggestions([]);
+        }
+      } catch (error) {
+        console.error("Search suggestion error:", error);
+        setSearchSuggestions([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300); // 300ms delay to avoid too frequent API calls
+    
+    setTypingTimeout(timeout);
+    
+    // Clean up the timeout when the component unmounts or when searchQuery changes
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [searchQuery, selectedMaterial]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
@@ -110,8 +156,12 @@ const Index = () => {
     setSelectedMaterial(value);
   };
 
-  const handleItemClick = (item: RecyclingItem) => {
+  const handleItemClick = (item: RecyclingItem | {id: string; name: string; materialType?: string}) => {
     handleSearch(item.name);
+  };
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchQuery(value);
   };
 
   return (
@@ -140,7 +190,38 @@ const Index = () => {
               </Select>
             </div>
             
-            <SearchInput onSearch={handleSearch} isLoading={loading} />
+            <SearchInput 
+              onSearch={handleSearch} 
+              isLoading={loading} 
+              onInputChange={handleSearchInputChange}
+            />
+            
+            {/* Show search suggestions when typing */}
+            <AnimatePresence>
+              {searchSuggestions.length > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="w-full max-w-2xl mx-auto mt-2 p-4 bg-white/90 backdrop-blur-sm rounded-lg border border-border shadow-sm"
+                >
+                  <h3 className="text-md font-medium mb-3">Did you mean:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {searchSuggestions.map(item => (
+                      <Button 
+                        key={item.id} 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleItemClick(item)}
+                        className="bg-white hover:bg-primary/10"
+                      >
+                        {item.name} <span className="text-xs ml-1 text-muted-foreground">({item.materialType})</span>
+                      </Button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {showingSuggestions && materialItems.length > 0 && (
               <motion.div 

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RecyclingIdea {
@@ -31,6 +30,11 @@ export interface SearchResult {
   timeRequired?: number | null;
   difficultyLevel?: number | null;
   tags?: string[];
+  similarItems?: {
+    id: string;
+    name: string;
+    materialType: string;
+  }[];
 }
 
 export const getMaterialTypes = async (): Promise<string[]> => {
@@ -153,7 +157,14 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
                 isGeneric: false,
                 timeRequired: idea.time_required,
                 difficultyLevel: idea.difficulty_level,
-                tags: tags.length > 0 ? tags : undefined
+                tags: tags.length > 0 ? tags : undefined,
+                similarItems: [
+                  {
+                    id: item.id,
+                    name: item.name,
+                    materialType: item.material_type
+                  }
+                ]
               };
             }
           }
@@ -215,7 +226,14 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
           "Look for specialized recycling programs in your area"
         ],
         howTo: `${similarMatches[0].material_type} materials can often be recycled, but may require special handling. Always follow your local recycling guidelines for proper disposal.`,
-        isGeneric: true
+        isGeneric: true,
+        similarItems: [
+          {
+            id: similarMatches[0].id,
+            name: similarMatches[0].name,
+            materialType: similarMatches[0].material_type
+          }
+        ]
       };
     }
 
