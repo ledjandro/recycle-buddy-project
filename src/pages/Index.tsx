@@ -1,12 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchInput from '@/components/SearchInput';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import { useToast } from '@/components/ui/use-toast';
-import { searchRecyclingItems, SearchResult, getMaterialTypes } from '@/services/supabaseService';
+import { 
+  searchRecyclingItems, 
+  SearchResult, 
+  getMaterialTypes, 
+  getItemsByMaterialType,
+  RecyclingItem 
+} from '@/services/supabaseService';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -14,6 +20,8 @@ const Index = () => {
   const [materialTypes, setMaterialTypes] = useState<string[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+  const [materialItems, setMaterialItems] = useState<RecyclingItem[]>([]);
+  const [showingSuggestions, setShowingSuggestions] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -31,6 +39,27 @@ const Index = () => {
     
     loadMaterialTypes();
   }, []);
+
+  useEffect(() => {
+    // Load items when material type changes
+    const loadItemsByMaterialType = async () => {
+      if (selectedMaterial === "all") {
+        setMaterialItems([]);
+        setShowingSuggestions(false);
+        return;
+      }
+      
+      try {
+        const items = await getItemsByMaterialType(selectedMaterial);
+        setMaterialItems(items);
+        setShowingSuggestions(items.length > 0);
+      } catch (error) {
+        console.error("Error loading items by material type:", error);
+      }
+    };
+    
+    loadItemsByMaterialType();
+  }, [selectedMaterial]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
@@ -81,6 +110,10 @@ const Index = () => {
     setSelectedMaterial(value);
   };
 
+  const handleItemClick = (item: RecyclingItem) => {
+    handleSearch(item.name);
+  };
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center">
       <AnimatedBackground />
@@ -108,6 +141,29 @@ const Index = () => {
             </div>
             
             <SearchInput onSearch={handleSearch} isLoading={loading} />
+            
+            {showingSuggestions && materialItems.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-2xl mx-auto mt-4 p-4 bg-white/90 backdrop-blur-sm rounded-lg border border-border shadow-sm"
+              >
+                <h3 className="text-md font-medium mb-3">Suggested {selectedMaterial} items you might have:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {materialItems.map(item => (
+                    <Button 
+                      key={item.id} 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleItemClick(item)}
+                      className="bg-white hover:bg-primary/10"
+                    >
+                      {item.name}
+                    </Button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
         

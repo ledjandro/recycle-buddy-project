@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RecyclingIdea {
@@ -49,6 +50,26 @@ export const getMaterialTypes = async (): Promise<string[]> => {
     return uniqueTypes;
   } catch (error) {
     console.error('Error in getMaterialTypes:', error);
+    return [];
+  }
+};
+
+export const getItemsByMaterialType = async (materialType: string): Promise<RecyclingItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('material_type', materialType)
+      .order('name');
+    
+    if (error) {
+      console.error('Error fetching items by material type:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getItemsByMaterialType:', error);
     return [];
   }
 };
