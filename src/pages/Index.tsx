@@ -70,12 +70,14 @@ const Index = () => {
             <ResultCard
               key={searchResult.itemName}
               itemName={searchResult.itemName}
+              materialType={searchResult.materialType}
+              ideaTitle={searchResult.ideaTitle}
               suggestions={searchResult.suggestions}
               howTo={searchResult.howTo}
               isGeneric={searchResult.isGeneric}
               timeRequired={searchResult.timeRequired}
               difficultyLevel={searchResult.difficultyLevel}
-              coverImageUrl={searchResult.coverImageUrl}
+              tags={searchResult.tags}
             />
           )}
         </AnimatePresence>

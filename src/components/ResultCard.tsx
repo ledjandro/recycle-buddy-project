@@ -2,28 +2,36 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Info, Clock, BarChart2 } from 'lucide-react';
+import { Info, Clock, BarChart2, Tag } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface ResultCardProps {
   itemName: string;
+  materialType: string;
+  ideaTitle: string | null;
   suggestions: string[];
   howTo: string;
   isGeneric?: boolean;
   className?: string;
   timeRequired?: number | null;
   difficultyLevel?: number | null;
-  coverImageUrl?: string | null;
+  tags?: string[];
+  isDetailPage?: boolean;
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({
   itemName,
+  materialType,
+  ideaTitle,
   suggestions,
   howTo,
   isGeneric = false,
   className,
   timeRequired,
   difficultyLevel,
-  coverImageUrl
+  tags,
+  isDetailPage = false
 }) => {
   return (
     <motion.div
@@ -39,34 +47,48 @@ const ResultCard: React.FC<ResultCardProps> = ({
       )}
     >
       <div className="p-6 md:p-8">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between mb-4">
           <div>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary mb-2">
-              Recycling Ideas
+              {materialType}
             </span>
             <h2 className="text-xl md:text-2xl font-medium text-foreground">
               {isGeneric 
                 ? `General Tips for "${itemName}"` 
-                : `Recycling Ideas for ${itemName.charAt(0).toUpperCase() + itemName.slice(1)}`
+                : `${ideaTitle || `Recycling Ideas for ${itemName}`}`
               }
             </h2>
           </div>
         </div>
 
+        {!isDetailPage && !isGeneric && (
+          <div className="mb-4">
+            <Link to={`/ideas/${encodeURIComponent(itemName)}`} state={{ 
+              itemName, materialType, ideaTitle, suggestions, howTo, isGeneric, timeRequired, difficultyLevel, tags 
+            }}>
+              <Button variant="secondary" className="w-full">
+                View Full Details
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {!isGeneric && (
-          <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
-            {timeRequired && (
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                <span>{timeRequired} mins</span>
-              </div>
-            )}
-            {difficultyLevel && (
-              <div className="flex items-center gap-1">
-                <BarChart2 className="w-4 h-4" />
-                <span>
-                  Difficulty: {difficultyLevel}/5
-                </span>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground bg-secondary px-2 py-1 rounded">
+              <Clock className="w-4 h-4" />
+              <span>{timeRequired ? `${timeRequired} mins` : 'Time varies'}</span>
+            </div>
+            
+            <div className="flex items-center gap-1 text-sm text-muted-foreground bg-secondary px-2 py-1 rounded">
+              <BarChart2 className="w-4 h-4" />
+              <span>Difficulty: {difficultyLevel ? `${difficultyLevel}/5` : 'Varies'}</span>
+            </div>
+
+            {tags && tags.length > 0 && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground bg-secondary px-2 py-1 rounded">
+                <Tag className="w-4 h-4" />
+                <span>{tags.join(', ')}</span>
               </div>
             )}
           </div>
@@ -104,6 +126,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
               </div>
             </div>
           </motion.div>
+        )}
+
+        {isDetailPage && (
+          <div className="mt-6">
+            <Link to="/">
+              <Button variant="outline" className="w-full">
+                Back to Search
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
     </motion.div>

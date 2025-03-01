@@ -23,12 +23,14 @@ export interface RecyclingItem {
 
 export interface SearchResult {
   itemName: string;
+  materialType: string;
+  ideaTitle: string | null;
   suggestions: string[];
   howTo: string;
   isGeneric: boolean;
   timeRequired?: number | null;
   difficultyLevel?: number | null;
-  coverImageUrl?: string | null;
+  tags?: string[];
 }
 
 export const searchRecyclingItems = async (query: string): Promise<SearchResult | null> => {
@@ -44,7 +46,6 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
         description, 
         material_type,
         difficulty_level,
-        image_url,
         ideas:items_ideas(
           idea_id,
           ideas:idea_id(
@@ -54,7 +55,11 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
             instructions,
             time_required,
             difficulty_level,
-            cover_image_url
+            tags:ideas_tags(
+              tags:tag_id(
+                name
+              )
+            )
           )
         )
       `)
@@ -81,14 +86,26 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
             console.log("Found idea:", idea);
             
             if (idea && idea.id) {
+              // Extract tags if available
+              const tags: string[] = [];
+              if (idea.tags && Array.isArray(idea.tags)) {
+                idea.tags.forEach(tagRelation => {
+                  if (tagRelation.tags && typeof tagRelation.tags === 'object' && tagRelation.tags.name) {
+                    tags.push(tagRelation.tags.name);
+                  }
+                });
+              }
+              
               return {
                 itemName: item.name,
+                materialType: item.material_type,
+                ideaTitle: idea.title,
                 suggestions: idea.description.split('\n').filter(Boolean),
                 howTo: idea.instructions,
                 isGeneric: false,
                 timeRequired: idea.time_required,
                 difficultyLevel: idea.difficulty_level,
-                coverImageUrl: idea.cover_image_url
+                tags: tags.length > 0 ? tags : undefined
               };
             }
           }
@@ -98,6 +115,8 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
       // If we found an item but no associated ideas, return item info with generic suggestions
       return {
         itemName: item.name,
+        materialType: item.material_type,
+        ideaTitle: null,
         suggestions: [
           `Consider reusing this ${item.material_type} item for crafts or storage`,
           "Check if your local recycling center accepts this material",
@@ -131,6 +150,8 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
     if (similarMatches && similarMatches.length > 0) {
       return {
         itemName: query,
+        materialType: similarMatches[0].material_type,
+        ideaTitle: null,
         suggestions: [
           `Check if your local recycling center accepts ${similarMatches[0].material_type}`,
           "Consider donating if the item is still in good condition",
@@ -145,6 +166,8 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
     // If no matches at all, return generic tips
     return {
       itemName: query,
+      materialType: "Unknown",
+      ideaTitle: null,
       suggestions: [
         "Check if your local recycling center accepts this material",
         "Consider donating if the item is still in good condition",
@@ -159,3 +182,4 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
     return null;
   }
 };
+
