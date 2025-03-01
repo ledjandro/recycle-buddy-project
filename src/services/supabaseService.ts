@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RecyclingIdea {
@@ -33,12 +32,33 @@ export interface SearchResult {
   tags?: string[];
 }
 
-export const searchRecyclingItems = async (query: string): Promise<SearchResult | null> => {
+export const getMaterialTypes = async (): Promise<string[]> => {
   try {
-    console.log("Searching for:", query);
+    const { data, error } = await supabase
+      .from('items')
+      .select('material_type')
+      .order('material_type');
     
-    // First, try to find an exact match
-    const { data: exactMatches, error: exactError } = await supabase
+    if (error) {
+      console.error('Error fetching material types:', error);
+      return [];
+    }
+    
+    // Extract unique material types
+    const uniqueTypes = [...new Set(data.map(item => item.material_type))];
+    return uniqueTypes;
+  } catch (error) {
+    console.error('Error in getMaterialTypes:', error);
+    return [];
+  }
+};
+
+export const searchRecyclingItems = async (query: string, materialType?: string): Promise<SearchResult | null> => {
+  try {
+    console.log("Searching for:", query, "Material type:", materialType);
+    
+    // Build query
+    let itemsQuery = supabase
       .from('items')
       .select(`
         id, 
@@ -65,6 +85,13 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
       `)
       .ilike('name', `%${query}%`)
       .limit(1);
+    
+    // Add material type filter if provided
+    if (materialType) {
+      itemsQuery = itemsQuery.eq('material_type', materialType);
+    }
+    
+    const { data: exactMatches, error: exactError } = await itemsQuery;
 
     if (exactError) {
       console.error('Error fetching exact matches:', exactError);
@@ -129,16 +156,24 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
     }
 
     // If no exact match, try to find a similar match by material type
-    const { data: similarMatches, error: similarError } = await supabase
+    let similarQuery = supabase
       .from('items')
       .select(`
         id, 
         name, 
         material_type,
         difficulty_level
-      `)
-      .ilike('material_type', `%${query}%`)
-      .limit(5);
+      `);
+    
+    // If materialType is provided, use that for filtering
+    if (materialType) {
+      similarQuery = similarQuery.eq('material_type', materialType);
+    } else {
+      // Otherwise try to match by material type in query
+      similarQuery = similarQuery.ilike('material_type', `%${query}%`);
+    }
+    
+    const { data: similarMatches, error: similarError } = await similarQuery.limit(5);
 
     if (similarError) {
       console.error('Error fetching similar matches:', similarError);
@@ -182,4 +217,3 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
     return null;
   }
 };
-

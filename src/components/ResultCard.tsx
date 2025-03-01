@@ -61,18 +61,6 @@ const ResultCard: React.FC<ResultCardProps> = ({
           </div>
         </div>
 
-        {!isDetailPage && !isGeneric && (
-          <div className="mb-4">
-            <Link to={`/ideas/${encodeURIComponent(itemName)}`} state={{ 
-              itemName, materialType, ideaTitle, suggestions, howTo, isGeneric, timeRequired, difficultyLevel, tags 
-            }}>
-              <Button variant="secondary" className="w-full">
-                View Full Details
-              </Button>
-            </Link>
-          </div>
-        )}
-
         {!isGeneric && (
           <div className="flex flex-wrap gap-2 mb-4">
             <div className="flex items-center gap-1 text-sm text-muted-foreground bg-secondary px-2 py-1 rounded">
