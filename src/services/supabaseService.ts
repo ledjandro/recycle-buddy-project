@@ -70,30 +70,36 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
 
     console.log("Exact matches:", exactMatches);
 
-    // If we have an exact match, return the first recycling idea
+    // If we have an exact match, return the related recycling ideas
     if (exactMatches && exactMatches.length > 0) {
       const item = exactMatches[0];
       
       // Check if there are any ideas associated with this item
       if (item.ideas && Array.isArray(item.ideas) && item.ideas.length > 0) {
-        // Get the first idea with actual idea data
-        const ideaData = item.ideas.find(i => i.ideas && Array.isArray(i.ideas) && i.ideas.length > 0);
+        // Flatten the nested ideas structure to access the actual idea objects
+        const allIdeas = item.ideas
+          .filter(ideaItem => ideaItem.ideas && typeof ideaItem.ideas === 'object')
+          .map(ideaItem => ideaItem.ideas);
         
-        if (ideaData && ideaData.ideas && Array.isArray(ideaData.ideas) && ideaData.ideas.length > 0) {
-          const idea = ideaData.ideas[0];
+        // If we have valid ideas, use the first one
+        if (allIdeas.length > 0) {
+          const idea = allIdeas[0];
           console.log("Found idea:", idea);
           
-          return {
-            itemName: item.name,
-            // Use the description for suggestions, split by newlines
-            suggestions: idea.description.split('\n').filter(Boolean),
-            // Use the instructions field for howTo, not the description
-            howTo: idea.instructions,
-            isGeneric: false,
-            timeRequired: idea.time_required,
-            difficultyLevel: idea.difficulty_level,
-            coverImageUrl: idea.cover_image_url
-          };
+          // Make sure we have a valid idea object
+          if (idea && idea.title) {
+            return {
+              itemName: item.name,
+              // Use proper suggestions from idea description
+              suggestions: idea.description.split('\n').filter(Boolean),
+              // Use the instructions field for howTo
+              howTo: idea.instructions,
+              isGeneric: false,
+              timeRequired: idea.time_required,
+              difficultyLevel: idea.difficulty_level,
+              coverImageUrl: idea.cover_image_url
+            };
+          }
         }
       }
       
