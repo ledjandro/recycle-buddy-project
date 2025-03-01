@@ -77,9 +77,9 @@ export const searchRecyclingItems = async (query: string): Promise<SearchResult 
       // Check if there are any ideas associated with this item
       if (item.ideas && item.ideas.length > 0) {
         // Get the first idea with actual idea data
-        const ideaData = item.ideas.find(i => i.ideas && i.ideas.length > 0);
+        const ideaData = item.ideas.find(i => i.ideas && Array.isArray(i.ideas) && i.ideas.length > 0);
         
-        if (ideaData && ideaData.ideas && ideaData.ideas.length > 0) {
+        if (ideaData && ideaData.ideas && Array.isArray(ideaData.ideas) && ideaData.ideas.length > 0) {
           const idea = ideaData.ideas[0];
           console.log("Found idea:", idea);
           
