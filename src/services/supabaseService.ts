@@ -88,7 +88,7 @@ export const getItemsByMaterialType = async (materialType: string): Promise<Recy
   }
 };
 
-export const generateRecyclingIdea = async (material?: string): Promise<SearchResult | null> => {
+export const generateRecyclingIdea = async (itemName?: string, material?: string): Promise<SearchResult | null> => {
   try {
     const materialTypes = [
       "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
@@ -97,71 +97,89 @@ export const generateRecyclingIdea = async (material?: string): Promise<SearchRe
     
     const materialType = material || materialTypes[Math.floor(Math.random() * materialTypes.length)];
     
-    const itemNames: Record<string, string[]> = {
-      "Plastic": ["Plastic Bottle", "Plastic Container", "Plastic Bag", "Plastic Toy", "Plastic Utensil"],
-      "Paper": ["Newspaper", "Magazine", "Printer Paper", "Paper Bag", "Gift Wrap"],
-      "Glass": ["Glass Bottle", "Glass Jar", "Glass Container", "Broken Glass", "Glass Cup"],
-      "Metal": ["Aluminum Can", "Tin Can", "Metal Container", "Metal Lid", "Foil"],
-      "Textile": ["Old T-shirt", "Jeans", "Bedsheet", "Curtain", "Towel"],
-      "Electronic": ["Old Phone", "Computer Parts", "Cables", "Batteries", "Remote Controller"],
-      "Organic": ["Food Scraps", "Coffee Grounds", "Eggshells", "Fruit Peels", "Yard Waste"],
-      "Wood": ["Wood Scraps", "Pallet", "Wooden Furniture", "Wooden Toy", "Chopsticks"],
-      "Cardboard": ["Cardboard Box", "Cereal Box", "Toilet Paper Roll", "Egg Carton", "Cardboard Tube"],
-      "Rubber": ["Old Tire", "Rubber Band", "Flip Flops", "Rubber Gloves", "Rubber Mat"],
-      "Composite": ["Tetra Pak", "Coffee Cup", "Chip Bag", "Toothpaste Tube", "Disposable Diaper"]
-    };
+    // If no specific item name provided, use generic items for that material
+    let itemToUse = itemName || "";
+    if (!itemToUse) {
+      const itemNames: Record<string, string[]> = {
+        "Plastic": ["Plastic Bottle", "Plastic Container", "Plastic Bag", "Plastic Toy", "Plastic Utensil"],
+        "Paper": ["Newspaper", "Magazine", "Printer Paper", "Paper Bag", "Gift Wrap"],
+        "Glass": ["Glass Bottle", "Glass Jar", "Mason Jar", "Glass Container", "Glass Cup"],
+        "Metal": ["Aluminum Can", "Tin Can", "Metal Container", "Metal Lid", "Foil"],
+        "Textile": ["Old T-shirt", "Jeans", "Bedsheet", "Curtain", "Towel"],
+        "Electronic": ["Old Phone", "Computer Parts", "Cables", "Batteries", "Remote Controller"],
+        "Organic": ["Food Scraps", "Coffee Grounds", "Eggshells", "Fruit Peels", "Yard Waste"],
+        "Wood": ["Wood Scraps", "Pallet", "Wooden Furniture", "Wooden Toy", "Chopsticks"],
+        "Cardboard": ["Cardboard Box", "Cereal Box", "Toilet Paper Roll", "Egg Carton", "Cardboard Tube"],
+        "Rubber": ["Old Tire", "Rubber Band", "Flip Flops", "Rubber Gloves", "Rubber Mat"],
+        "Composite": ["Tetra Pak", "Coffee Cup", "Chip Bag", "Toothpaste Tube", "Disposable Diaper"]
+      };
+      
+      const items = itemNames[materialType] || ["Generic Item"];
+      itemToUse = items[Math.floor(Math.random() * items.length)];
+    }
     
-    const items = itemNames[materialType] || ["Generic Item"];
-    const randomItem = items[Math.floor(Math.random() * items.length)];
+    // Generate ideas specific to the item
+    const ideaOptions = getItemSpecificIdeas(itemToUse, materialType);
     
-    const ideaTitles = [
-      `Upcycled ${randomItem} Project`,
-      `Creative Reuse for ${randomItem}`,
-      `DIY ${randomItem} Transformation`,
-      `Sustainable Craft with ${randomItem}`,
-      `Eco-friendly ${randomItem} Makeover`
-    ];
+    // Select a random title from the available options or use a generic title pattern
+    const ideaTitles = ideaOptions.titles.length > 0 
+      ? ideaOptions.titles 
+      : [
+          `Upcycled ${itemToUse} Project`,
+          `Creative Reuse for ${itemToUse}`,
+          `DIY ${itemToUse} Transformation`,
+          `Sustainable Craft with ${itemToUse}`,
+          `Eco-friendly ${itemToUse} Makeover`
+        ];
     
     const randomTitle = ideaTitles[Math.floor(Math.random() * ideaTitles.length)];
     
-    const suggestionTemplates = [
-      `Clean the ${randomItem} thoroughly before starting the project`,
-      `Cut the ${randomItem} into smaller pieces for easier handling`,
-      `Combine multiple ${randomItem}s for a larger project`,
-      `Add paint or decoration to personalize your creation`,
-      `Share your creation on social media to inspire others`,
-      `Consider using eco-friendly adhesives or fasteners for assembly`,
-      `Incorporate other recycled materials to enhance your project`,
-      `Use heat (if appropriate for the material) to reshape or modify`,
-      `Reinforce weak points with additional materials as needed`
-    ];
+    // Use item-specific suggestions or fallback to generic ones
+    const suggestionPool = ideaOptions.suggestions.length > 0 
+      ? ideaOptions.suggestions 
+      : [
+          `Clean the ${itemToUse} thoroughly before starting the project`,
+          `Consider decorating the ${itemToUse} with paint, ribbons, or other materials`,
+          `Make sure to remove any labels or residue from the ${itemToUse}`,
+          `Combine multiple ${itemToUse}s for a larger project`,
+          `Share your creation on social media to inspire others`,
+          `Consider using eco-friendly adhesives or fasteners for assembly`,
+          `Incorporate other recycled materials to enhance your project`,
+          `Use heat (if appropriate for the material) to reshape or modify`,
+          `Reinforce weak points with additional materials as needed`
+        ];
     
-    const shuffledSuggestions = [...suggestionTemplates].sort(() => 0.5 - Math.random());
+    // Shuffle and select 3-5 suggestions
+    const shuffledSuggestions = [...suggestionPool].sort(() => 0.5 - Math.random());
     const selectedSuggestions = shuffledSuggestions.slice(0, Math.floor(Math.random() * 3) + 3);
     
-    const instructions = [
-      `Start by thoroughly cleaning the ${randomItem}. Remove any labels, residue, or contents.`,
-      `Depending on your project, you might need to cut, shape, or modify the ${randomItem}.`,
-      `Assemble the parts according to your design, using appropriate adhesives or fasteners.`,
-      `Add finishing touches like paint, decoration, or functional elements.`,
-      `Let everything dry completely before using your new creation.`
-    ].join("\n\n");
+    // Use item-specific instructions or fallback to generic ones
+    const instructions = ideaOptions.instructions || 
+      [
+        `Start by thoroughly cleaning the ${itemToUse}. Remove any labels, residue, or contents.`,
+        `Depending on your project, you might need to cut, shape, or modify the ${itemToUse}.`,
+        `Assemble the parts according to your design, using appropriate adhesives or fasteners.`,
+        `Add finishing touches like paint, decoration, or functional elements.`,
+        `Let everything dry completely before using your new creation.`
+      ].join("\n\n");
     
     const difficulty = Math.floor(Math.random() * 5) + 1;
     const time = (Math.floor(Math.random() * 6) + 1) * 15;
     
-    const possibleTags = ["DIY", "Upcycling", "Beginner", "Advanced", "Kids", "Home Decor", "Storage", "Garden", "Office", "Kitchen", "Crafts", "Functional", "Decorative", "Zero Waste", "Sustainable"];
+    // Use item-specific tags or fallback to generic ones
+    const possibleTags = ideaOptions.tags.length > 0 
+      ? ideaOptions.tags 
+      : ["DIY", "Upcycling", "Beginner", "Advanced", "Kids", "Home Decor", "Storage", "Garden", "Office", "Kitchen", "Crafts", "Functional", "Decorative", "Zero Waste", "Sustainable"];
+    
     const shuffledTags = [...possibleTags].sort(() => 0.5 - Math.random());
     const selectedTags = shuffledTags.slice(0, Math.floor(Math.random() * 3) + 2);
     
-    const imageCategories = [
-      "upcycling", "recycling", "sustainable", "reuse", "craft", "diy", "eco"
-    ];
-    const randomCategory = imageCategories[Math.floor(Math.random() * imageCategories.length)];
-    const imageUrl = `https://source.unsplash.com/random?${randomCategory},${materialType.toLowerCase()}`;
+    // Create more specific image search keywords
+    const imageCategory = ideaOptions.imageKeywords || itemToUse.toLowerCase();
+    const imageUrl = `https://source.unsplash.com/random?${imageCategory},${materialType.toLowerCase()}`;
     
     return {
-      itemName: randomItem,
+      itemName: itemToUse,
       materialType: materialType,
       ideaTitle: randomTitle,
       suggestions: selectedSuggestions,
@@ -178,6 +196,110 @@ export const generateRecyclingIdea = async (material?: string): Promise<SearchRe
     return null;
   }
 };
+
+// Helper function to provide item-specific recycling ideas
+function getItemSpecificIdeas(itemName: string, materialType: string) {
+  const itemNameLower = itemName.toLowerCase();
+  
+  // Default return structure
+  const defaultReturn = {
+    titles: [],
+    suggestions: [],
+    instructions: "",
+    tags: [],
+    imageKeywords: ""
+  };
+  
+  // Mason Jar specific ideas
+  if (itemNameLower.includes("mason jar") || itemNameLower.includes("glass jar")) {
+    return {
+      titles: [
+        "Mason Jar Herb Garden",
+        "DIY Mason Jar Soap Dispenser",
+        "Mason Jar Lighting Fixture",
+        "Mason Jar Kitchen Storage Solution",
+        "Mason Jar Terrarium",
+        "Mason Jar Candle Holder",
+        "Mason Jar Bathroom Organizer",
+        "Mason Jar Table Centerpiece"
+      ],
+      suggestions: [
+        "Clean the mason jar thoroughly and remove the label",
+        "Paint the jar with glass paint for added decoration",
+        "Use the jar's lid for additional design elements",
+        "Group several mason jars together for a coordinated look",
+        "Add fairy lights inside for a magical glow effect",
+        "Use chalkboard paint to create labels on the jars",
+        "Add hanging hardware to create hanging jar planters",
+        "Fill the jar with layers of colored sand for decorative effect",
+        "Use a glass drill bit to add drainage holes for plants",
+        "Wrap twine or ribbon around the neck for a rustic touch"
+      ],
+      instructions: "Start by thoroughly cleaning your mason jar and removing any labels. If your project requires it, you can paint the jar with glass paint or spray paint designed for glass surfaces. For a planter, add a layer of small pebbles at the bottom for drainage, followed by activated charcoal to prevent mold, and then potting soil. When making a light fixture, be careful when adding electrical components - consider using battery-powered LED lights for safety. For storage solutions, add dividers or inserts as needed, and consider adding labels for organization.",
+      tags: ["Mason Jar", "Glass Upcycle", "Home Decor", "Kitchen", "Garden", "Storage", "Gift Idea", "Rustic", "Farmhouse", "Zero Waste"],
+      imageKeywords: "mason+jar,upcycle,craft"
+    };
+  }
+  
+  // Plastic Bottle specific ideas
+  else if (itemNameLower.includes("plastic bottle")) {
+    return {
+      titles: [
+        "Plastic Bottle Vertical Garden",
+        "Bottle Bird Feeder",
+        "Upcycled Bottle Planter",
+        "DIY Plastic Bottle Piggy Bank",
+        "Bottle Sprinkler System",
+        "Recycled Bottle Lamp",
+        "Self-Watering Planter from Bottles"
+      ],
+      suggestions: [
+        "Cut the bottle horizontally or vertically depending on your project",
+        "Use sandpaper to rough up surfaces that will be painted or glued",
+        "Add drainage holes for plant-based projects",
+        "Consider melting bottles (with proper ventilation) for artistic projects",
+        "Collect multiple bottles of the same size for larger projects",
+        "Remove labels completely for a cleaner look",
+        "Use non-toxic, waterproof paint for outdoor projects"
+      ],
+      instructions: "Begin by thoroughly cleaning and drying your plastic bottle. Remove all labels and adhesive residue. For most projects, you'll need to cut the bottle - use sharp scissors or a craft knife, and always cut away from yourself. For planters, make sure to add drainage holes. When painting, use paints specifically designed for plastic, or rough up the surface first with sandpaper to help the paint adhere better. For outdoor projects, seal your finished creation with a waterproof sealant to extend its lifespan.",
+      tags: ["Plastic Upcycle", "Garden", "Outdoor", "Kids Craft", "Functional", "Eco-friendly", "Water Conservation", "Budget Friendly"],
+      imageKeywords: "plastic+bottle,upcycle,recycling"
+    };
+  }
+  
+  // Cardboard Box specific ideas
+  else if (itemNameLower.includes("cardboard") || itemNameLower.includes("box")) {
+    return {
+      titles: [
+        "Cardboard Box Storage Organizer",
+        "DIY Cardboard Cat House",
+        "Cardboard Children's Playhouse",
+        "Upcycled Box Drawer Dividers",
+        "Cardboard Wall Art",
+        "Box Bookshelf Project",
+        "Cardboard Gift Boxes"
+      ],
+      suggestions: [
+        "Reinforce seams with strong tape or glue",
+        "Cover with decorative paper or fabric for a finished look",
+        "Use a ruler for straight cutting lines",
+        "Double or triple layer cardboard for added strength",
+        "Seal with mod podge or clear acrylic spray for durability",
+        "Add dividers to create compartments",
+        "Consider painting with acrylic paint for a solid finish"
+      ],
+      instructions: "Start with clean, sturdy cardboard. Plan your cuts carefully - measure twice, cut once! For most projects, you'll want to reinforce the corners and edges with strong tape or hot glue. To create a finished look, consider covering with decorative paper, fabric, or paint. Acrylic paint works well on cardboard, but you may need multiple coats for even coverage. For a more durable finish, seal your project with mod podge or a clear acrylic spray. If creating furniture or weight-bearing items, be sure to reinforce adequately and test weight limits before use.",
+      tags: ["Cardboard", "Upcycle", "Home Organization", "Kids Project", "Pet Furniture", "Zero Waste", "Budget Friendly", "Storage Solution"],
+      imageKeywords: "cardboard,upcycle,diy"
+    };
+  }
+  
+  // Add more item-specific ideas as needed for common searches
+  
+  // If no specific match, return defaults which will trigger the generic responses
+  return defaultReturn;
+}
 
 export const searchRecyclingItems = async (query: string, materialType?: string): Promise<SearchResult | null> => {
   try {
@@ -454,17 +576,14 @@ const generateMultipleAiIdeas = async (
   }
   
   for (let i = 0; i < count; i++) {
-    let itemName = query;
-    
-    const result = await generateRecyclingIdea(material);
+    // Pass the query (item name) to the generator to create relevant ideas
+    const result = await generateRecyclingIdea(query, material);
     
     if (result) {
-      result.itemName = itemName;
-      
       if (!ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
         ideas.push(result);
       } else {
-        i -= 1;
+        i -= 1; // Try again if we got a duplicate title
       }
     }
   }

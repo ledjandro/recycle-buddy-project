@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -46,6 +47,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
         "w-full max-w-2xl mx-auto mt-8 overflow-hidden",
         "rounded-2xl border border-border bg-white shadow-sm",
         "backdrop-blur-sm",
+        isAiGenerated ? "border-purple-200" : "",
         className
       )}
     >
@@ -112,7 +114,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
               transition={{ duration: 0.3, delay: index * 0.1 }}
               className="flex items-start"
             >
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center mt-0.5 mr-3">
+              <span className={`flex-shrink-0 w-6 h-6 rounded-full ${isAiGenerated ? 'bg-purple-100 text-purple-800' : 'bg-primary/10 text-primary'} flex items-center justify-center mt-0.5 mr-3`}>
                 {index + 1}
               </span>
               <span className="text-foreground">{suggestion}</span>
@@ -125,10 +127,10 @@ const ResultCard: React.FC<ResultCardProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.4 }}
-            className="mt-6 p-4 rounded-xl bg-secondary border border-border"
+            className={`mt-6 p-4 rounded-xl ${isAiGenerated ? 'bg-purple-50 border border-purple-200' : 'bg-secondary border border-border'}`}
           >
             <div className="flex items-start">
-              <Info className="w-5 h-5 text-primary mt-0.5 mr-3 flex-shrink-0" />
+              <Info className={`w-5 h-5 ${isAiGenerated ? 'text-purple-800' : 'text-primary'} mt-0.5 mr-3 flex-shrink-0`} />
               <div>
                 <h4 className="font-medium text-foreground mb-1">How to do it:</h4>
                 <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
