@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -36,8 +37,10 @@ const ResultCard: React.FC<ResultCardProps> = ({
   imageUrl,
   isAiGenerated = false
 }) => {
+  // Load images lazily to improve initial render time
   const imageOptions = { loading: 'lazy' } as React.ImgHTMLAttributes<HTMLImageElement>;
   
+  // Use lighter animations for better performance
   const containerAnimation = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -50,11 +53,6 @@ const ResultCard: React.FC<ResultCardProps> = ({
     animate: { opacity: 1, x: 0 },
     transition: { duration: 0.2 }
   };
-
-  const howToSteps = howTo
-    .split(/\n|(?:\. (?=[A-Z]))/g)
-    .filter(step => step.trim().length > 0)
-    .map(step => step.trim().replace(/\.$/, ''));
 
   return (
     <motion.div
@@ -147,7 +145,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
           )}
         </ul>
 
-        {howToSteps.length > 0 && (
+        {howTo && (
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
@@ -156,24 +154,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
           >
             <div className="flex items-start">
               <Info className={`w-5 h-5 ${isAiGenerated ? 'text-purple-800' : 'text-primary'} mt-0.5 mr-3 flex-shrink-0`} />
-              <div className="w-full">
-                <h4 className="font-medium text-foreground mb-3">How to do it:</h4>
-                <ul className="space-y-3">
-                  {howToSteps.map((step, index) => (
-                    <motion.li
-                      key={index}
-                      initial={{ opacity: 0, x: -5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.05 }}
-                      className="flex items-start"
-                    >
-                      <span className={`flex-shrink-0 w-6 h-6 rounded-full ${isAiGenerated ? 'bg-purple-100 text-purple-800' : 'bg-primary/10 text-primary'} flex items-center justify-center mt-0.5 mr-3`}>
-                        {index + 1}
-                      </span>
-                      <span className="text-muted-foreground">{step}</span>
-                    </motion.li>
-                  ))}
-                </ul>
+              <div>
+                <h4 className="font-medium text-foreground mb-1">How to do it:</h4>
+                <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
               </div>
             </div>
           </motion.div>

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RecyclingIdea {
@@ -92,7 +93,7 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
   try {
     const materialTypes = [
       "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
-      "Organic", "Wood", "Cardboard", "Rubber", "Composite", "Cork"
+      "Organic", "Wood", "Cardboard", "Rubber", "Composite"
     ];
     
     const materialType = material || materialTypes[Math.floor(Math.random() * materialTypes.length)];
@@ -110,8 +111,7 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
         "Wood": ["Wood Scraps", "Pallet", "Wooden Furniture", "Wooden Toy", "Chopsticks"],
         "Cardboard": ["Cardboard Box", "Cereal Box", "Toilet Paper Roll", "Egg Carton", "Cardboard Tube"],
         "Rubber": ["Old Tire", "Rubber Band", "Flip Flops", "Rubber Gloves", "Rubber Mat"],
-        "Composite": ["Tetra Pak", "Coffee Cup", "Chip Bag", "Toothpaste Tube", "Disposable Diaper"],
-        "Cork": ["Wine Cork", "Cork Board", "Cork Sheet", "Cork Stopper", "Cork Coaster"]
+        "Composite": ["Tetra Pak", "Coffee Cup", "Chip Bag", "Toothpaste Tube", "Disposable Diaper"]
       };
       
       const items = itemNames[materialType] || ["Generic Item"];
@@ -123,14 +123,30 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     // Use a specific title from the options or generate a fallback
     const ideaTitles = ideaOptions.titles.length > 0 
       ? ideaOptions.titles 
-      : generateRelevantTitles(itemToUse, materialType);
+      : [
+          `${itemToUse} Lamp`,
+          `${itemToUse} Storage Container`,
+          `${itemToUse} Wall Organizer`,
+          `${itemToUse} Planter Box`,
+          `${itemToUse} Desk Organizer`
+        ];
     
     const randomTitle = ideaTitles[Math.floor(Math.random() * ideaTitles.length)];
     
     // Get specific or fallback suggestions
     const suggestionPool = ideaOptions.suggestions.length > 0 
       ? ideaOptions.suggestions 
-      : generateRelevantSuggestions(itemToUse, materialType, randomTitle);
+      : [
+          `Cut the ${itemToUse} to create the frame for your project`,
+          `Reinforce weak points with hot glue or strong tape`,
+          `Add holes for drainage if making a planter`,
+          `Sand rough edges to prevent injuries`,
+          `Apply a coat of primer before painting for better adhesion`,
+          `Use weatherproof sealant for outdoor projects`,
+          `Add rubber feet to the bottom to prevent scratching surfaces`,
+          `Install LED strip lights for illuminated projects`,
+          `Add hinges to create doors or lids that open and close`
+        ];
     
     // Select a subset of the suggestions
     const shuffledSuggestions = [...suggestionPool].sort(() => 0.5 - Math.random());
@@ -138,7 +154,13 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     
     // Use specific instructions or fallback
     const instructions = ideaOptions.instructions || 
-      generateRelevantInstructions(itemToUse, materialType, randomTitle);
+      `Step 1: Clean the ${itemToUse} thoroughly and remove any labels or residue.\n\n` +
+      `Step 2: Mark your cutting lines with a permanent marker and carefully cut the ${itemToUse} according to your design plan.\n\n` +
+      `Step 3: Sand any rough edges to make them smooth and safe to handle.\n\n` +
+      `Step 4: If your project requires it, drill holes for drainage, hanging, or attaching components.\n\n` +
+      `Step 5: Apply primer and then paint with colors of your choice, or cover with decorative paper or fabric.\n\n` +
+      `Step 6: Allow everything to dry completely before using your new creation.\n\n` +
+      `Step 7: Add any final details like handles, labels, or decorative elements.`;
     
     // Set reasonable difficulty and time values
     const difficulty = ideaOptions.difficultyLevel || Math.floor(Math.random() * 5) + 1;
@@ -147,13 +169,13 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     // Use specific tags or fallback
     const possibleTags = ideaOptions.tags.length > 0 
       ? ideaOptions.tags 
-      : generateRelevantTags(itemToUse, materialType, randomTitle);
+      : ["Upcycle", "Home Decor", "Functional", "Storage", "Gardening", "Organization", "DIY", "Eco-friendly"];
     
     const shuffledTags = [...possibleTags].sort(() => 0.5 - Math.random());
     const selectedTags = shuffledTags.slice(0, Math.floor(Math.random() * 3) + 2);
     
     // Set appropriate image search keywords
-    const imageCategory = ideaOptions.imageKeywords || `${itemToUse.toLowerCase()} upcycle ${randomTitle.toLowerCase()}`;
+    const imageCategory = ideaOptions.imageKeywords || `${itemToUse.toLowerCase()} upcycle`;
     const imageUrl = `https://source.unsplash.com/random?${imageCategory},recycling`;
     
     return {
@@ -174,388 +196,6 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     return null;
   }
 };
-
-function generateRelevantTitles(itemName: string, materialType: string): string[] {
-  const itemNameLower = itemName.toLowerCase();
-  
-  if (itemNameLower.includes("wine cork") || itemNameLower.includes("cork")) {
-    return [
-      "Wine Cork Bulletin Board",
-      "Wine Cork Trivet",
-      "Wine Cork Keychain",
-      "Cork Coasters Set",
-      "Cork-Bottom Planters",
-      "Wine Cork Bath Mat",
-      "Cork Cabinet Knobs",
-      "Wine Cork Wreath"
-    ];
-  }
-  
-  if (itemNameLower.includes("plastic bottle")) {
-    return [
-      "Plastic Bottle Self-Watering Planter",
-      "Plastic Bottle Bird Feeder",
-      "Bottle Terrarium Garden",
-      "Bottle Desk Organizer",
-      "Plastic Bottle Lamp Shade"
-    ];
-  }
-  
-  if (itemNameLower.includes("glass jar") || itemNameLower.includes("mason jar")) {
-    return [
-      "Mason Jar Herb Garden",
-      "Solar Jar Lantern",
-      "Jar Snow Globe",
-      "Bathroom Storage Jars",
-      "Jar Terrarium"
-    ];
-  }
-  
-  if (itemNameLower.includes("tin can") || itemNameLower.includes("aluminum can")) {
-    return [
-      "Tin Can Lanterns",
-      "Painted Can Planters",
-      "Can Wind Chimes",
-      "Can Desk Organizer",
-      "Can String Lights"
-    ];
-  }
-  
-  if (itemNameLower.includes("umbrella") || itemNameLower.includes("broken umbrella")) {
-    return [
-      "Umbrella Tote Bag",
-      "Umbrella Fabric Pillowcase",
-      "Umbrella Rain Boots Cover",
-      "Umbrella Garden Shade",
-      "Umbrella Fabric Wall Art"
-    ];
-  }
-  
-  // Generic fallback options
-  return [
-    `${itemName} Home Décor`,
-    `Upcycled ${itemName} Storage`,
-    `${itemName} Garden Accessory`,
-    `${materialType} Art Piece`,
-    `${itemName} Functional Holder`
-  ];
-}
-
-function generateRelevantSuggestions(itemName: string, materialType: string, ideaTitle: string): string[] {
-  const itemNameLower = itemName.toLowerCase();
-  const titleLower = ideaTitle.toLowerCase();
-  
-  // Wine cork specific suggestions
-  if (itemNameLower.includes("wine cork") || itemNameLower.includes("cork")) {
-    if (titleLower.includes("bulletin board")) {
-      return [
-        "Collect at least 100-200 wine corks for a medium-sized board",
-        "Cut corks in half lengthwise to create a flat backing surface",
-        "Arrange corks in a pattern before gluing to test the design",
-        "Use wood glue for better adhesion between corks",
-        "Add a wooden frame around the edges for a finished look",
-        "Apply a clear sealant to protect the corks from moisture"
-      ];
-    }
-    
-    if (titleLower.includes("trivet")) {
-      return [
-        "Select corks of similar height for a level surface",
-        "Arrange corks in a circular or square pattern",
-        "Use a hot glue gun to connect the corks tightly",
-        "Add a backing material like felt to protect surfaces",
-        "Consider sealing with a food-safe finish for durability",
-        "Create multiple trivets in different sizes for a set"
-      ];
-    }
-    
-    if (titleLower.includes("keychain")) {
-      return [
-        "Select intact, attractive corks with interesting winery stamps",
-        "Drill a small hole through the center of the cork",
-        "Thread a keyring through the hole using a jump ring",
-        "Add decorative beads or charms for personalization",
-        "Apply a clear sealant to protect the cork from wear",
-        "Attach a small tag with the winery name for a special touch"
-      ];
-    }
-    
-    if (titleLower.includes("coaster")) {
-      return [
-        "Slice wine corks into 1/4 inch thick rounds",
-        "Arrange the cork slices in a circular pattern on a template",
-        "Glue the slices together using a strong adhesive",
-        "Add a thin cork sheet on the bottom for stability",
-        "Seal with polyurethane spray to make it waterproof",
-        "Create a set of 4-6 coasters for a complete gift"
-      ];
-    }
-    
-    return [
-      "Clean and sort corks by size and condition",
-      "Use a sharp knife or saw to cut corks as needed",
-      "Pre-arrange your design before gluing for best results",
-      "Consider using a backing material for stability",
-      "Apply a sealant to protect from moisture and dirt",
-      "Personalize with paint, stamps, or other decorations"
-    ];
-  }
-  
-  // Plastic bottle specific suggestions
-  if (itemNameLower.includes("plastic bottle")) {
-    if (titleLower.includes("planter")) {
-      return [
-        "Select a clean plastic bottle with a smooth surface",
-        "Cut the bottle horizontally to create a container and water reservoir",
-        "Punch drainage holes in the upper section",
-        "Create a wick from cotton rope to connect soil to water",
-        "Decorate the exterior with weather-resistant paint",
-        "Consider adding legs or a stand to elevate the planter"
-      ];
-    }
-    
-    if (titleLower.includes("bird feeder")) {
-      return [
-        "Clean a plastic bottle thoroughly and remove labels",
-        "Cut small feeding holes about 1/3 up from the bottom",
-        "Insert wooden spoons or dowels through the bottle as perches",
-        "Create a roof from the bottle cap or other materials",
-        "Punch drainage holes in the very bottom for rainwater",
-        "Attach strong string or wire for hanging the feeder"
-      ];
-    }
-    
-    return [
-      "Clean the bottle thoroughly and remove all labels",
-      "Use a sharp utility knife or scissors for cutting",
-      "Smooth any rough edges with sandpaper",
-      "Consider heating the plastic briefly to shape it",
-      "Add multiple bottles together for larger projects",
-      "Paint with plastic-specific paints for durability"
-    ];
-  }
-  
-  // Umbrella specific suggestions
-  if (itemNameLower.includes("umbrella") || itemNameLower.includes("broken umbrella")) {
-    if (titleLower.includes("tote")) {
-      return [
-        "Carefully remove the fabric from the umbrella frame",
-        "Clean the fabric thoroughly with mild soap and water",
-        "Create a paper pattern for your tote design",
-        "Cut the umbrella fabric according to your pattern",
-        "Use a heavy-duty needle for sewing waterproof material",
-        "Add sturdy handles from webbing or the umbrella handle"
-      ];
-    }
-    
-    if (titleLower.includes("pillowcase")) {
-      return [
-        "Select the best sections of the umbrella fabric",
-        "Pre-wash the fabric to test colorfastness",
-        "Cut fabric to standard pillowcase dimensions plus seam allowance",
-        "Sew with appropriate needle for synthetic fabrics",
-        "Add a zipper or envelope closure for easy removal",
-        "Consider backing with cotton fabric for comfort"
-      ];
-    }
-    
-    return [
-      "Disassemble the umbrella carefully to preserve the fabric",
-      "Clean the fabric thoroughly before reusing",
-      "Treat the fabric with waterproof spray if needed",
-      "Use sharp scissors designed for synthetic fabrics",
-      "Prepare a paper pattern before cutting the fabric",
-      "Sew with appropriate heavy-duty needles and thread"
-    ];
-  }
-  
-  // Generic fallback suggestions based on material
-  const materialSuggestions: Record<string, string[]> = {
-    "Plastic": [
-      "Clean the plastic item thoroughly with soap and water",
-      "Remove any labels or adhesive with oil or alcohol",
-      "Use sharp scissors or a utility knife for cutting plastic",
-      "Smooth rough edges with fine sandpaper",
-      "Use plastic-specific paints or primers for decoration",
-      "Consider heat-forming techniques for reshaping"
-    ],
-    "Glass": [
-      "Clean glass thoroughly with vinegar solution",
-      "Handle with care and use proper protection when cutting glass",
-      "Use glass paint or etching cream for decoration",
-      "Add decorative elements with hot glue for texture",
-      "Consider frosting techniques for privacy or style",
-      "Use rubber grommets for any drilled holes to prevent cracking"
-    ],
-    "Metal": [
-      "Remove any rust with vinegar or commercial remover",
-      "Sand the surface for better paint adhesion",
-      "Use metal primer before applying decorative paint",
-      "Wear gloves to protect from sharp edges",
-      "Use a punch tool to create decorative hole patterns",
-      "Seal painted surfaces with clear enamel for durability"
-    ],
-    "Textile": [
-      "Wash and dry the fabric before beginning your project",
-      "Iron fabric to remove wrinkles for easier cutting",
-      "Use fabric scissors for clean cuts",
-      "Pin pattern pieces before cutting for accuracy",
-      "Use appropriate needle and thread for fabric weight",
-      "Pre-test any dyes or paints on scrap fabric"
-    ]
-  };
-  
-  return materialSuggestions[materialType] || [
-    `Clean the ${itemName} thoroughly before starting`,
-    `Gather all necessary tools and materials`,
-    `Prepare a workspace with proper protection`,
-    `Follow safety precautions when cutting or altering the item`,
-    `Allow adequate drying time between steps`,
-    `Apply a protective finish appropriate for the material`
-  ];
-}
-
-function generateRelevantInstructions(itemName: string, materialType: string, ideaTitle: string): string {
-  const itemNameLower = itemName.toLowerCase();
-  const titleLower = ideaTitle.toLowerCase();
-  
-  // Wine cork specific instructions
-  if (itemNameLower.includes("wine cork") || itemNameLower.includes("cork")) {
-    if (titleLower.includes("bulletin board")) {
-      return "Step 1: Collect 100-200 wine corks depending on desired board size.\nStep 2: Select a wooden board or frame as your base.\nStep 3: Plan your cork arrangement - rows, patterns, or designs.\nStep 4: Cut some corks in half lengthwise to create flat-backed pieces.\nStep 5: Apply wood glue to the back of each cork and press firmly onto the board.\nStep 6: Allow the glue to dry completely for 24 hours.\nStep 7: Attach hanging hardware to the back of the board.\nStep 8: Optional: Apply a clear sealant spray to protect the corks.\nStep 9: Add pushpins or thumbtacks and start posting your notes and photos.";
-    }
-    
-    if (titleLower.includes("trivet")) {
-      return "Step 1: Collect 20-30 wine corks of similar height.\nStep 2: Decide on a shape for your trivet - square, round, or hexagonal.\nStep 3: Arrange the corks on a flat surface in your desired pattern.\nStep 4: Apply a strong adhesive like E6000 or hot glue between touching cork surfaces.\nStep 5: Press corks firmly together and hold until initial bond is set.\nStep 6: Allow the adhesive to cure completely according to product instructions.\nStep 7: Apply a thin strip of adhesive to the bottom perimeter and attach felt backing.\nStep 8: Optional: Spray with a clear, food-safe sealant to protect from moisture.\nStep 9: Let the trivet dry completely before using under hot pots or dishes.";
-    }
-    
-    if (titleLower.includes("coaster")) {
-      return "Step 1: Collect 7-10 wine corks per coaster.\nStep 2: Using a sharp knife, slice the corks into rounds approximately 1/4 inch thick.\nStep 3: Arrange the cork slices in a circular pattern on wax paper.\nStep 4: Apply a small dot of wood glue between touching cork pieces.\nStep 5: Press firmly and wipe away any excess glue that squeezes out.\nStep 6: Allow to dry completely for at least 4 hours.\nStep 7: Cut a circle of thin cork sheet slightly smaller than your coaster for the base.\nStep 8: Glue this cork circle to the bottom of your coaster for stability.\nStep 9: Apply 2-3 coats of polyurethane spray, allowing drying time between coats.";
-    }
-    
-    return "Step 1: Clean and sort your wine corks by size and condition.\nStep 2: Sketch your design or use a template as a guide.\nStep 3: Cut or modify corks as needed using a sharp utility knife.\nStep 4: Arrange the corks in your desired pattern before gluing.\nStep 5: Apply wood glue or hot glue to attach corks to each other and/or a backing material.\nStep 6: Press firmly and allow adequate drying time between steps.\nStep 7: Add any decorative elements like paint, ribbon, or embellishments.\nStep 8: Apply a sealant appropriate for your project's use.\nStep 9: Attach any hardware needed for hanging or using your creation.";
-  }
-  
-  // Plastic bottle specific instructions
-  if (itemNameLower.includes("plastic bottle")) {
-    if (titleLower.includes("planter")) {
-      return "Step 1: Take a clean plastic bottle and remove all labels and adhesive.\nStep 2: Cut the bottle horizontally about 1/3 from the bottom using sharp scissors.\nStep 3: Drill or punch 3-4 small drainage holes in the bottom section.\nStep 4: Cut small notches around the top edge of the bottom section.\nStep 5: Take the top section and invert it, fitting it into the bottom section.\nStep 6: Thread a piece of cotton rope or fabric strip through the bottle cap to act as a wick.\nStep 7: Fill the top section with potting soil, leaving the wick extending into the soil.\nStep 8: Plant your seeds or small plants in the soil.\nStep 9: Fill the bottom reservoir with water and place in a sunny location.";
-    }
-    
-    if (titleLower.includes("bird feeder")) {
-      return "Step 1: Clean a plastic bottle thoroughly and remove the label.\nStep 2: Mark feeding hole locations about 1/3 up from the bottom, on opposite sides.\nStep 3: Cut small holes (1-2 inches diameter) at your marked spots using a sharp knife.\nStep 4: Drill or punch small drainage holes in the very bottom of the bottle.\nStep 5: Insert wooden dowels or spoons through the bottle just below the feeding holes to create perches.\nStep 6: Create a roof by cutting a circle from plastic or other waterproof material.\nStep 7: Attach the roof over the bottle cap using strong adhesive or wire.\nStep 8: Punch two small holes at the top and thread strong cord for hanging.\nStep 9: Fill with birdseed through the bottle opening and hang in a sheltered location.";
-    }
-    
-    return "Step 1: Clean your plastic bottle thoroughly and remove all labels.\nStep 2: Plan your design and mark cutting lines with a permanent marker.\nStep 3: Cut the bottle carefully using sharp scissors or a utility knife.\nStep 4: Sand any rough edges to prevent injury.\nStep 5: Assemble the cut pieces according to your project design.\nStep 6: Use hot glue or appropriate adhesive to secure connections.\nStep 7: Paint the exterior with plastic-specific paint if desired.\nStep 8: Allow to dry completely between coats.\nStep 9: Add any finishing touches or decorative elements to complete your project.";
-  }
-  
-  // Umbrella specific instructions
-  if (itemNameLower.includes("umbrella") || itemNameLower.includes("broken umbrella")) {
-    if (titleLower.includes("tote")) {
-      return "Step 1: Carefully disassemble the umbrella, separating the fabric from the frame.\nStep 2: Clean the fabric thoroughly with mild soap and water, then dry completely.\nStep 3: Create a paper pattern for your tote bag based on the available fabric.\nStep 4: Fold the fabric in half and pin your pattern on top.\nStep 5: Cut along the pattern lines using sharp scissors.\nStep 6: Sew the sides and bottom of the bag using a sewing machine with a heavy-duty needle.\nStep 7: For the handles, cut strips from extra umbrella fabric or use webbing.\nStep 8: Sew the handles securely to the inside of the bag.\nStep 9: Add a button, snap, or zipper closure if desired.";
-    }
-    
-    if (titleLower.includes("garden shade")) {
-      return "Step 1: Remove the fabric canopy from the broken umbrella frame.\nStep 2: Clean the fabric thoroughly and allow to dry completely.\nStep 3: Cut the fabric into your desired shape for garden shade.\nStep 4: Hem the edges of the fabric to prevent fraying.\nStep 5: Attach grommets along the edges at regular intervals.\nStep 6: Install posts or use existing structures in your garden for mounting.\nStep 7: Thread strong cord or wire through the grommets.\nStep 8: Secure the shade to your posts or structures, pulling taut.\nStep 9: Adjust the height and angle to provide optimal shade for your plants.";
-    }
-    
-    return "Step 1: Carefully disassemble the broken umbrella to salvage the waterproof fabric.\nStep 2: Clean the fabric using mild soap and water, then dry completely.\nStep 3: Iron the fabric on low heat to remove wrinkles if necessary.\nStep 4: Create a paper pattern for your project based on available fabric.\nStep 5: Cut the umbrella fabric according to your pattern.\nStep 6: Use a heavy-duty needle and polyester thread for sewing.\nStep 7: Assemble the pieces according to your project design.\nStep 8: Reinforce stress points with extra stitching or patches.\nStep 9: Add any decorative elements or practical features to complete your project.";
-  }
-  
-  // Generic fallback instructions based on material type
-  const materialInstructions: Record<string, string> = {
-    "Plastic": "Step 1: Clean your plastic item thoroughly with soap and water.\nStep 2: Remove any labels or adhesive using oil or alcohol.\nStep 3: Draw your design or cutting lines with a permanent marker.\nStep 4: Carefully cut the plastic using appropriate scissors or tools.\nStep 5: Sand any rough edges to prevent injuries.\nStep 6: Apply plastic primer if you plan to paint the item.\nStep 7: Paint with plastic-specific paints in thin, even coats.\nStep 8: Allow adequate drying time between coats.\nStep 9: Apply a clear sealant to protect your finished project.",
-    
-    "Glass": "Step 1: Clean the glass thoroughly with vinegar and water solution.\nStep 2: Plan your design and mark any cutting lines with a non-permanent marker.\nStep 3: Protect your work surface and wear safety glasses if cutting glass.\nStep 4: Apply glass paint, frosting spray, or etching cream as desired.\nStep 5: Allow proper drying or setting time according to product instructions.\nStep 6: Apply additional coats or colors as needed for your design.\nStep 7: Heat-set painted designs according to paint manufacturer instructions.\nStep 8: Add any embellishments like beads, wire, or decorative elements.\nStep 9: Apply a protective clear coat if recommended for your materials.",
-    
-    "Metal": "Step 1: Clean the metal surface thoroughly to remove dirt and oils.\nStep 2: Remove any rust using vinegar solution or commercial rust remover.\nStep 3: Sand the surface to create better adhesion for paint or finishes.\nStep 4: Apply a metal primer and allow to dry completely.\nStep 5: Paint with metal-specific paint in thin, even coats.\nStep 6: Create any desired patterns, holes, or bends in the metal.\nStep 7: Add decorative elements like beads, wire, or other materials.\nStep 8: Seal with a clear protective coating appropriate for your project's use.\nStep 9: Attach any hardware needed for hanging or displaying your creation.",
-    
-    "Textile": "Step 1: Wash and dry the fabric to remove any sizing or dirt.\nStep 2: Iron the fabric to remove wrinkles for easier cutting.\nStep 3: Create or trace a pattern onto the fabric with fabric markers.\nStep 4: Cut the fabric precisely using sharp fabric scissors.\nStep 5: Pin pieces together if you'll be sewing multiple sections.\nStep 6: Sew the pieces together using appropriate thread and needle.\nStep 7: Turn the project right-side out if applicable and press seams.\nStep 8: Add any closures, decorative elements, or embellishments.\nStep 9: Give your creation a final press and trim any loose threads."
-  };
-  
-  return materialInstructions[materialType] || `Step 1: Clean the ${itemName} thoroughly before beginning.\nStep 2: Gather all necessary tools and materials for your project.\nStep 3: Measure and mark any cutting lines needed for your design.\nStep 4: Carefully cut or modify the item according to your plan.\nStep 5: Smooth any rough edges or surfaces as appropriate for the material.\nStep 6: Assemble the components of your ${ideaTitle}.\nStep 7: Secure parts together using appropriate adhesive or fasteners.\nStep 8: Apply paint, fabric, or decorative elements as desired.\nStep 9: Allow your project to dry completely before using.`;
-}
-
-function generateRelevantTags(itemName: string, materialType: string, ideaTitle: string): string[] {
-  const itemNameLower = itemName.toLowerCase();
-  const titleLower = ideaTitle.toLowerCase();
-  
-  // Base tags that apply to most projects
-  const baseTags = ["Upcycled", "DIY", "Sustainable", "Eco-friendly", "Zero Waste"];
-  
-  // Material specific tags
-  const materialTags: Record<string, string[]> = {
-    "Plastic": ["Plastic Upcycle", "Plastic Alternative", "Single-Use Reduction"],
-    "Glass": ["Glass Reuse", "Repurposed Glass", "Bottle Craft"],
-    "Metal": ["Metal Upcycle", "Industrial", "Metal Craft"],
-    "Paper": ["Paper Craft", "Paper Reuse", "Paper Art"],
-    "Textile": ["Fabric Upcycle", "No-Sew", "Textile Reuse"],
-    "Wood": ["Wood Craft", "Reclaimed Wood", "Rustic"],
-    "Cardboard": ["Cardboard Craft", "Box Reuse", "Cardboard Upcycle"],
-    "Cork": ["Cork Craft", "Wine Lover", "Cork Upcycle"]
-  };
-  
-  // Function tags based on project type
-  const functionTags: string[] = [];
-  
-  if (titleLower.includes("planter") || titleLower.includes("garden")) {
-    functionTags.push("Gardening", "Indoor Plants", "Plant Lover");
-  }
-  
-  if (titleLower.includes("lamp") || titleLower.includes("light") || titleLower.includes("lantern")) {
-    functionTags.push("Lighting", "Home Decor", "Mood Lighting");
-  }
-  
-  if (titleLower.includes("organizer") || titleLower.includes("storage") || titleLower.includes("holder")) {
-    functionTags.push("Organization", "Storage Solution", "Declutter");
-  }
-  
-  if (titleLower.includes("table") || titleLower.includes("chair") || titleLower.includes("shelf")) {
-    functionTags.push("Furniture", "Home Improvement", "Interior Design");
-  }
-  
-  if (titleLower.includes("art") || titleLower.includes("decor") || titleLower.includes("decoration")) {
-    functionTags.push("Wall Art", "Home Decor", "Decorative");
-  }
-  
-  if (titleLower.includes("toy") || titleLower.includes("game") || titleLower.includes("kids")) {
-    functionTags.push("Kids Craft", "Educational", "Play Time");
-  }
-  
-  if (titleLower.includes("jewelry") || titleLower.includes("necklace") || titleLower.includes("bracelet")) {
-    functionTags.push("Wearable", "Fashion", "Accessories");
-  }
-  
-  // Specific tags for wine cork projects
-  if (itemNameLower.includes("wine cork") || itemNameLower.includes("cork")) {
-    const corkTags = ["Wine Lover", "Cork Craft", "Cork Upcycle"];
-    
-    if (titleLower.includes("bulletin") || titleLower.includes("board")) {
-      corkTags.push("Office Decor", "Organization", "Message Board");
-    }
-    
-    if (titleLower.includes("trivet") || titleLower.includes("coaster")) {
-      corkTags.push("Kitchen Accessory", "Dining", "Tableware", "Hostess Gift");
-    }
-    
-    if (titleLower.includes("keychain")) {
-      corkTags.push("Accessories", "Gift Idea", "Wine Memorabilia");
-    }
-    
-    return [...baseTags, ...corkTags].slice(0, 8);
-  }
-  
-  // Combine all relevant tags and remove duplicates
-  const allTags = [
-    ...baseTags,
-    ...(materialTags[materialType] || []),
-    ...functionTags,
-    materialType
-  ];
-  
-  const uniqueTags = [...new Set(allTags)];
-  return uniqueTags.slice(0, 8); // Return up to 8 tags
-}
 
 function getItemSpecificIdeas(itemName: string, materialType: string) {
   const itemNameLower = itemName.toLowerCase();
@@ -615,4 +255,510 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
       suggestions: [
         "Cut the bottle horizontally to create two sections - the top will be inverted into the bottom section",
         "Use a heated nail to melt clean holes rather than cutting with scissors for cleaner results",
-        "Add a wick
+        "Add a wick made of cotton rope between the water reservoir and the soil",
+        "For multi-bottle projects, use zip ties or hot glue to connect bottles securely",
+        "Cover the exterior with rope wrapping for a natural look",
+        "Use biodegradable paint for outdoor projects to minimize environmental impact",
+        "For the hydroponic system, create holes for net pots in the bottle sides",
+        "For the organizer, cut bottles at varying heights to hold different items"
+      ],
+      instructions: "To make a Self-Watering Planter: Take a clean plastic bottle and cut it horizontally about 1/3 from the bottom. This bottom section will be your water reservoir. Take the top section and invert it so the bottle neck points downward. Insert a piece of cotton rope or strip of fabric through the bottle neck to serve as a wick. Fill the inverted top section with potting soil, ensuring the wick extends up into the soil. Plant your seedling or seeds in the soil. Fill the bottom reservoir with water. Place the soil-filled top section into the bottom reservoir, with the wick extending into the water. As the soil dries out, it will draw water up through the wick, keeping your plants perfectly watered for days.",
+      tags: ["Gardening", "Self-Watering", "Indoor Plants", "Plastic Upcycle", "Sustainable", "Hydroponic", "Zero Waste"],
+      imageKeywords: "plastic+bottle+self+watering+planter",
+      difficultyLevel: 2,
+      timeRequired: 30
+    };
+  }
+  
+  else if (itemNameLower.includes("cardboard") || itemNameLower.includes("box")) {
+    return {
+      titles: [
+        "Cardboard Roll-Top Desk Organizer",
+        "Multi-Compartment Shoe Storage System",
+        "Cardboard Cable Management Station",
+        "Cardboard Floating Wall Shelves",
+        "Cardboard Bedside Caddy",
+        "Honeycomb Modular Storage Unit",
+        "Cardboard Under-Bed Rolling Storage",
+        "Cardboard Drawer Divider System"
+      ],
+      suggestions: [
+        "Use packing tape to reinforce all folds and corners for durability",
+        "Apply several thin coats of acrylic paint instead of one thick coat to prevent warping",
+        "Add drawer pulls made from wine corks, wooden beads, or cabinet knobs",
+        "Create a template before cutting to ensure precise, matching pieces",
+        "Use wood glue rather than white glue for stronger bonds between cardboard pieces",
+        "Apply a clear polyurethane spray to seal and waterproof the finished product",
+        "Add caster wheels to the bottom of storage units for mobility",
+        "Line the inside with decorative paper or fabric for a finished look"
+      ],
+      instructions: "To build a Honeycomb Modular Storage Unit: Collect 6-8 same-sized cardboard boxes (shipping boxes work well). Cut off the top and bottom flaps from each box. Measure and mark 2-inch tabs along each open edge. Score and fold these tabs inward. Apply wood glue to the tabs and connect the boxes in a honeycomb pattern, ensuring each box shares at least one side with another. Reinforce all connections with packing tape on the inside. Apply primer to the entire unit, then paint with your choice of colors. Once dry, apply 2-3 coats of clear polyurethane spray for durability. Allow to fully cure for 24 hours before use. Mount to the wall using L-brackets, or leave freestanding. Each hexagonal opening serves as a perfect shelf for books, plants, or decorative items.",
+      tags: ["Organization", "Home Storage", "Cardboard Furniture", "DIY", "Eco-friendly", "Modular", "Wall Mount"],
+      imageKeywords: "honeycomb+cardboard+shelf",
+      difficultyLevel: 4,
+      timeRequired: 120
+    };
+  }
+  
+  else if (itemNameLower.includes("t-shirt") || itemNameLower.includes("shirt") || itemNameLower.includes("textile")) {
+    return {
+      titles: [
+        "No-Sew T-shirt Market Bag",
+        "T-shirt Memory Quilt",
+        "Braided T-shirt Rug",
+        "T-shirt Yarn Plant Hanger",
+        "T-shirt Pillow Cover Set",
+        "T-shirt Produce Bags",
+        "Knotted T-shirt Wall Hanging",
+        "T-shirt Dog Toy Collection"
+      ],
+      suggestions: [
+        "Use sharp fabric scissors for clean cuts without stretching the material",
+        "For t-shirt yarn projects, cut shirts into continuous spirals to maximize length",
+        "Pre-wash all shirts before starting to prevent shrinkage later",
+        "Use iron-on interfacing on the back of special shirts for quilting to preserve prints",
+        "Tie tight square knots for no-sew projects to prevent unraveling",
+        "Use matching color threads when sewing to make seams less visible",
+        "Reinforce handles on bags with double stitching or extra layers",
+        "Spray light starch on completed fabric items for a crisper finish"
+      ],
+      instructions: "To create a No-Sew T-shirt Market Bag: Start with a clean, unwanted t-shirt. Lay it flat and cut off the sleeves along the seams. Next, cut out the neckline, making the opening wider - this will be the top of your bag. Turn the shirt inside out. Using fabric scissors, cut fringe strips along the bottom of the shirt, about 3-4 inches long and 1 inch wide. Tie each fringe strip to the one next to it using double knots, working your way across the entire bottom. Once all strips are tied, turn the shirt right-side out. You now have a durable, stretchy market bag perfect for groceries, gym clothes, or beach essentials. The t-shirt material is washable and surprisingly strong, capable of holding up to 15-20 pounds depending on the fabric thickness.",
+      tags: ["No-Sew", "T-shirt Upcycle", "Shopping Bag", "Eco-friendly", "Zero Waste", "Textile Reuse", "Beginner Friendly"],
+      imageKeywords: "tshirt+tote+bag+upcycled",
+      difficultyLevel: 1,
+      timeRequired: 20
+    };
+  }
+  
+  else if (itemNameLower.includes("aluminum can") || itemNameLower.includes("tin can") || itemNameLower.includes("metal can")) {
+    return {
+      titles: [
+        "Aluminum Can Lantern Set",
+        "Tin Can Desk Organizer Caddy",
+        "Industrial Tin Can Lamp",
+        "Can Herb Garden Row Markers",
+        "Mini Can Succulent Planters",
+        "Can Wind Chimes Mobile",
+        "Aluminum Can Rose Garden Stakes",
+        "Upcycled Can Kitchen Utensil Holder"
+      ],
+      suggestions: [
+        "Use a nail and hammer to punch decorative patterns for light to shine through",
+        "File or sand all cut edges to prevent injuries",
+        "Apply a clear coat sealer to prevent rusting on outdoor projects",
+        "Remove paper labels with warm soapy water and baking soda paste",
+        "For planters, punch drainage holes in the bottom using a nail",
+        "Use spray paint designed for metal surfaces for best adhesion",
+        "When cutting cans, wear gloves to protect against sharp edges",
+        "Add a copper wire rim at the top of cans for a decorative finish"
+      ],
+      instructions: "To create Industrial Tin Can Lamp: Begin with a clean, label-free large tin can (coffee cans work well). Using a drill with a 1/8-inch metal bit, carefully drill a hole in the center of the bottom of the can for the cord. Sand any sharp edges. Mark and drill decorative patterns on the sides of the can using increasingly larger drill bits for varied sizes. Clean out any metal shavings. Spray paint the exterior with metallic or matte black spray paint designed for metal. Allow to dry completely. Insert a pendant light kit through the bottom hole, securing the socket inside the can. Add an Edison bulb for the perfect industrial look. Mount on a wooden base for stability, or create a hanging pendant by attaching chain or rope to the top rim. This lamp creates beautiful light patterns on surrounding walls when illuminated.",
+      tags: ["Industrial", "Lighting", "Metal Upcycle", "Home Decor", "Rustic", "Functional", "Sustainable Design"],
+      imageKeywords: "tin+can+lamp+industrial",
+      difficultyLevel: 3,
+      timeRequired: 60
+    };
+  }
+  
+  else if (itemNameLower.includes("pallet") || itemNameLower.includes("wood")) {
+    return {
+      titles: [
+        "Pallet Vertical Herb Garden",
+        "Rustic Pallet Coffee Table with Storage",
+        "Pallet Outdoor Sofa with Cushions",
+        "Pallet Wall-Mounted Wine Rack",
+        "Pallet Wood Floating Shelves",
+        "Pallet Bed Frame with Under-Lighting",
+        "Pallet Outdoor Path Tiles",
+        "Pallet Wood Bathroom Organizer"
+      ],
+      suggestions: [
+        "Use a pry bar instead of a hammer to disassemble pallets with minimal wood damage",
+        "Sand all wood thoroughly to prevent splinters, starting with coarse and finishing with fine grit",
+        "Apply wood conditioner before staining for more even color absorption",
+        "Use a vinegar and steel wool solution for an instant weathered gray look",
+        "Check pallets for the HT stamp (heat-treated) which indicates safe, non-chemical treatment",
+        "Drill pilot holes to prevent wood from splitting when adding screws",
+        "Apply several coats of polyurethane for outdoor projects to protect against elements",
+        "Use wood glue in addition to screws for stronger joints"
+      ],
+      instructions: "To build a Rustic Pallet Coffee Table: Start with two clean, heat-treated pallets (look for the HT stamp). Sand all surfaces thoroughly, starting with 80-grit and working up to 220-grit sandpaper. Apply wood conditioner, then stain in your choice of color. Once dry, apply three coats of polyurethane, sanding lightly between coats. Stack the pallets with the bottom one upside-down to create a storage compartment. Secure together using 3-inch wood screws at each corner. Add caster wheels to the bottom for mobility, screwing directly into the thicker support beams. For a finished look, cut a piece of plywood to size for the top surface, sand, stain, and seal to match. Attach with screws from underneath. For optional storage, add wooden crates inside the open spaces. This coffee table provides both a rustic centerpiece and practical storage for books, blankets, or remote controls.",
+      tags: ["Pallet Furniture", "Living Room", "Rustic", "Storage Solution", "Wood Upcycle", "DIY Furniture", "Sustainable"],
+      imageKeywords: "pallet+coffee+table+rustic",
+      difficultyLevel: 4,
+      timeRequired: 180
+    };
+  }
+  
+  else if (itemNameLower.includes("toilet paper roll") || itemNameLower.includes("paper tube")) {
+    return {
+      titles: [
+        "Toilet Paper Roll Seed Starter Pots",
+        "Cardboard Tube Desk Organizer",
+        "Decorative Wall Art from Paper Tubes",
+        "Toilet Paper Roll Fire Starters",
+        "Cardboard Roll Advent Calendar",
+        "Paper Tube Cable Organizers",
+        "Bathroom Wall Shelf from Tubes",
+        "Cardboard Tube Bird Feeder"
+      ],
+      suggestions: [
+        "Cut tubes into even ring sections for uniform pieces in artwork",
+        "Use modge podge or clear acrylic spray to seal cardboard and prevent warping",
+        "Group and glue tubes together to create strength through numbers",
+        "Paint tubes before assembly for easier coverage",
+        "When using for plants, make sure to cut slits at the bottom for drainage",
+        "For fire starters, dip in melted wax for longer burn time",
+        "Use a paper punch to create decorative patterns in tube sides",
+        "Flatten tubes and cut into strips for weaving projects"
+      ],
+      instructions: "To create Toilet Paper Roll Seed Starter Pots: Collect 15-20 empty toilet paper rolls. For each roll, make four 1-inch cuts on one end, spaced evenly around the circumference. Fold these cut sections inward like closing a box, tucking the last flap under the first to secure the bottom. Paint the exterior with non-toxic paint if desired, or leave natural. Fill each pot with seed starting soil to about 3/4 full. Plant your seeds according to package directions, usually 1/4 inch deep. Water gently and place in a sunny window or under grow lights. When seedlings are ready to transplant, simply plant the entire biodegradable pot in your garden - the cardboard will break down naturally while preventing transplant shock. Label each pot with a popsicle stick marker. These pots are perfect for starting tomatoes, peppers, herbs, and flowers.",
+      tags: ["Gardening", "Seed Starting", "Biodegradable", "Zero Waste", "Spring Project", "Cardboard Upcycle", "Kid-Friendly"],
+      imageKeywords: "toilet+paper+roll+seed+starters",
+      difficultyLevel: 1,
+      timeRequired: 30
+    };
+  }
+  
+  else if (itemNameLower.includes("newspaper") || itemNameLower.includes("magazine")) {
+    return {
+      titles: [
+        "Newspaper Gift Basket with Handle",
+        "Magazine Page Coasters Set",
+        "Woven Magazine Page Placemat",
+        "Newspaper Seedling Pots",
+        "Rolled Magazine Photo Frame",
+        "Waterproof Newspaper Produce Bags",
+        "Magazine Page Beaded Necklace",
+        "Newspaper Wall Art Typography"
+      ],
+      suggestions: [
+        "Roll newspaper or magazine pages tightly around a skewer for strong building elements",
+        "Seal finished paper crafts with clear acrylic spray for water resistance",
+        "Select magazine pages with complementary colors for more attractive finished items",
+        "Use a glue stick rather than liquid glue to prevent paper from wrinkling",
+        "Cut uniform strips using a paper cutter for more professional results",
+        "When weaving, alternate horizontal and vertical pieces for strength",
+        "Use a bone folder to create crisp folds without damaging paper",
+        "Apply mod podge between layers when laminating for a sturdy finish"
+      ],
+      instructions: "To create Magazine Page Coasters: Select 20-30 full-size colorful magazine pages. Cut each page into long strips approximately 1/2 inch wide (a paper cutter works best for uniform strips). Take one strip and tightly roll it from one end to the other, adding a small dot of glue at the end to secure it. This forms your first coil. Continue rolling all your strips into tight coils. Next, arrange 7 coils in a circular pattern, with one in the center and six surrounding it. Use white glue to secure them together. Continue adding concentric circles of coils until you reach your desired coaster size (usually 4 inches in diameter). Once dry, coat both sides with three layers of mod podge, allowing drying time between coats. Finish with a clear acrylic spray sealer for water resistance. Create a set of 4-6 coasters, using complementary colors or themes from your magazine pages. These coasters are both decorative and functional, with each one being uniquely patterned.",
+      tags: ["Paper Craft", "Home Decor", "Upcycled", "Coasters", "Eco-friendly", "Colorful", "Magazine Reuse"],
+      imageKeywords: "magazine+coasters+recycled",
+      difficultyLevel: 2,
+      timeRequired: 90
+    };
+  }
+  
+  return defaultReturn;
+}
+
+export const searchRecyclingItems = async (query: string, materialType?: string): Promise<SearchResult | null> => {
+  try {
+    console.log("Searching for:", query, "Material type:", materialType);
+    
+    let itemsQuery = supabase
+      .from('items')
+      .select(`
+        id, 
+        name, 
+        description, 
+        material_type,
+        difficulty_level,
+        image_url,
+        ideas:items_ideas(
+          idea_id,
+          ideas:idea_id(
+            id,
+            title,
+            description,
+            instructions,
+            time_required,
+            difficulty_level,
+            cover_image_url,
+            tags:ideas_tags(
+              tags:tag_id(
+                name
+              )
+            )
+          )
+        )
+      `)
+      .ilike('name', `%${query}%`)
+      .limit(1);
+    
+    if (materialType) {
+      itemsQuery = itemsQuery.eq('material_type', materialType);
+    }
+    
+    const { data: exactMatches, error: exactError } = await itemsQuery;
+
+    if (exactError) {
+      console.error('Error fetching exact matches:', exactError);
+      return null;
+    }
+
+    console.log("Exact matches:", exactMatches);
+
+    const aiIdeasPromise = generateMultipleAiIdeas(query, materialType, 6);
+
+    if (exactMatches && exactMatches.length > 0) {
+      const item = exactMatches[0];
+      
+      let mainIdea = null;
+      const relatedIdeas = [];
+      
+      for (const matchedItem of exactMatches) {
+        if (matchedItem.ideas && Array.isArray(matchedItem.ideas)) {
+          for (const ideaRelation of matchedItem.ideas) {
+            if (ideaRelation.ideas && typeof ideaRelation.ideas === 'object') {
+              const idea = ideaRelation.ideas;
+              
+              if (idea && idea.id) {
+                const tags: string[] = [];
+                if (idea.tags && Array.isArray(idea.tags)) {
+                  idea.tags.forEach(tagRelation => {
+                    if (tagRelation.tags && typeof tagRelation.tags === 'object' && tagRelation.tags.name) {
+                      tags.push(tagRelation.tags.name);
+                    }
+                  });
+                }
+                
+                const processedIdea = {
+                  id: idea.id,
+                  title: idea.title,
+                  description: idea.description.split('\n').filter(Boolean),
+                  instructions: idea.instructions,
+                  timeRequired: idea.time_required,
+                  difficultyLevel: idea.difficulty_level,
+                  imageUrl: idea.cover_image_url,
+                  tags: tags.length > 0 ? tags : undefined
+                };
+                
+                if (!mainIdea) {
+                  mainIdea = processedIdea;
+                } else {
+                  if (!relatedIdeas.some(ri => ri.id === idea.id)) {
+                    relatedIdeas.push(processedIdea);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      const generatedAiIdeas = await aiIdeasPromise;
+      
+      if (mainIdea) {
+        const result: SearchResult = {
+          itemName: item.name,
+          materialType: item.material_type,
+          ideaTitle: mainIdea.title,
+          suggestions: mainIdea.description,
+          howTo: mainIdea.instructions,
+          isGeneric: false,
+          timeRequired: mainIdea.timeRequired,
+          difficultyLevel: mainIdea.difficultyLevel,
+          tags: mainIdea.tags,
+          imageUrl: mainIdea.imageUrl || item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
+          relatedIdeas: [
+            ...relatedIdeas,
+            ...generatedAiIdeas.map(aiIdea => ({
+              id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              title: aiIdea.ideaTitle || '',
+              description: aiIdea.suggestions,
+              instructions: aiIdea.howTo,
+              timeRequired: aiIdea.timeRequired || null,
+              difficultyLevel: aiIdea.difficultyLevel || null,
+              tags: aiIdea.tags,
+              imageUrl: aiIdea.imageUrl,
+              isAiGenerated: true
+            }))
+          ],
+          similarItems: exactMatches.map(match => ({
+            id: match.id,
+            name: match.name,
+            materialType: match.material_type
+          }))
+        };
+        
+        return result;
+      }
+      
+      const aiResults = await aiIdeasPromise;
+      
+      return {
+        itemName: item.name,
+        materialType: item.material_type,
+        ideaTitle: null,
+        suggestions: [
+          `Consider reusing this ${item.material_type} item for crafts or storage`,
+          "Check if your local recycling center accepts this material",
+          "Search online for specific upcycling ideas for this item"
+        ],
+        howTo: item.description || `This is a ${item.material_type} item that may be recyclable depending on your local facilities.`,
+        isGeneric: true,
+        difficultyLevel: item.difficulty_level,
+        imageUrl: item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
+        relatedIdeas: aiResults.map(aiIdea => ({
+          id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          title: aiIdea.ideaTitle || '',
+          description: aiIdea.suggestions,
+          instructions: aiIdea.howTo,
+          timeRequired: aiIdea.timeRequired || null,
+          difficultyLevel: aiIdea.difficultyLevel || null,
+          tags: aiIdea.tags,
+          imageUrl: aiIdea.imageUrl,
+          isAiGenerated: true
+        })),
+        similarItems: exactMatches.map(match => ({
+          id: match.id,
+          name: match.name,
+          materialType: match.material_type
+        }))
+      };
+    }
+
+    let similarQuery = supabase
+      .from('items')
+      .select(`
+        id, 
+        name, 
+        material_type,
+        difficulty_level,
+        image_url
+      `);
+    
+    if (materialType) {
+      similarQuery = similarQuery.eq('material_type', materialType);
+    } else {
+      similarQuery = similarQuery.ilike('material_type', `%${query}%`);
+    }
+    
+    const { data: similarMatches, error: similarError } = await similarQuery.limit(5);
+
+    if (similarError) {
+      console.error('Error fetching similar matches:', similarError);
+    }
+
+    console.log("Similar matches by material:", similarMatches);
+
+    const generatedIdeas = await aiIdeasPromise;
+
+    if (similarMatches && similarMatches.length > 0) {
+      return {
+        itemName: query,
+        materialType: similarMatches[0].material_type,
+        ideaTitle: null,
+        suggestions: [
+          `Check if your local recycling center accepts ${similarMatches[0].material_type}`,
+          "Consider donating if the item is still in good condition",
+          `Search online for DIY upcycling projects for ${similarMatches[0].material_type} items`,
+          "Look for specialized recycling programs in your area"
+        ],
+        howTo: `${similarMatches[0].material_type} materials can often be recycled, but may require special handling. Always follow your local recycling guidelines for proper disposal.`,
+        isGeneric: true,
+        imageUrl: similarMatches[0].image_url || `https://source.unsplash.com/random?${similarMatches[0].material_type.toLowerCase()},recycling`,
+        relatedIdeas: generatedIdeas.map(aiIdea => ({
+          id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          title: aiIdea.ideaTitle || '',
+          description: aiIdea.suggestions,
+          instructions: aiIdea.howTo,
+          timeRequired: aiIdea.timeRequired || null,
+          difficultyLevel: aiIdea.difficultyLevel || null,
+          tags: aiIdea.tags,
+          imageUrl: aiIdea.imageUrl,
+          isAiGenerated: true
+        })),
+        similarItems: [
+          {
+            id: similarMatches[0].id,
+            name: similarMatches[0].name,
+            materialType: similarMatches[0].material_type
+          }
+        ]
+      };
+    }
+
+    return {
+      itemName: query,
+      materialType: "Unknown",
+      ideaTitle: null,
+      suggestions: [
+        "Check if your local recycling center accepts this material",
+        "Consider donating if the item is still in good condition",
+        "Search online for DIY upcycling projects specific to your item",
+        "For electronics, look for e-waste recycling programs in your area"
+      ],
+      howTo: "Always check with your local recycling guidelines to ensure proper disposal of items that cannot be repurposed.",
+      isGeneric: true,
+      imageUrl: `https://source.unsplash.com/random?recycling,${query.toLowerCase()}`,
+      relatedIdeas: generatedIdeas.map(aiIdea => ({
+        id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        title: aiIdea.ideaTitle || '',
+        description: aiIdea.suggestions,
+        instructions: aiIdea.howTo,
+        timeRequired: aiIdea.timeRequired || null,
+        difficultyLevel: aiIdea.difficultyLevel || null,
+        tags: aiIdea.tags,
+        imageUrl: aiIdea.imageUrl,
+        isAiGenerated: true
+      }))
+    };
+  } catch (error) {
+    console.error('Error in searchRecyclingItems:', error);
+    return null;
+  }
+};
+
+const generateMultipleAiIdeas = async (
+  query: string, 
+  materialType?: string, 
+  count: number = 6
+): Promise<SearchResult[]> => {
+  try {
+    let material = materialType;
+    if (!material) {
+      const materialTypes = [
+        "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
+        "Organic", "Wood", "Cardboard", "Rubber", "Composite"
+      ];
+      
+      material = materialTypes.find(m => query.toLowerCase().includes(m.toLowerCase()));
+      
+      if (!material) {
+        material = materialTypes[Math.floor(Math.random() * materialTypes.length)];
+      }
+    }
+    
+    const promises: Promise<SearchResult | null>[] = [];
+    for (let i = 0; i < count; i++) {
+      promises.push(generateRecyclingIdea(query, material));
+    }
+    
+    const results = await Promise.all(promises);
+    const ideas: SearchResult[] = [];
+    
+    results.forEach(result => {
+      if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
+        ideas.push(result);
+      }
+    });
+    
+    const missingCount = count - ideas.length;
+    if (missingCount > 0) {
+      for (let i = 0; i < missingCount; i++) {
+        const result = await generateRecyclingIdea(query, material);
+        if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
+          ideas.push(result);
+        }
+      }
+    }
+    
+    return ideas.slice(0, count);
+  } catch (error) {
+    console.error('Error generating multiple AI ideas:', error);
+    return [];
+  }
+};
