@@ -31,6 +31,7 @@ const IdeaDetail = () => {
       timeRequired: ideaData.timeRequired,
       difficultyLevel: ideaData.difficultyLevel,
       tags: ideaData.tags || [],
+      imageUrl: ideaData.imageUrl,
       isMainIdea: true
     };
     
@@ -179,6 +180,7 @@ const IdeaDetail = () => {
                     timeRequired={idea.timeRequired}
                     difficultyLevel={idea.difficultyLevel}
                     tags={idea.tags}
+                    imageUrl={idea.imageUrl}
                     isDetailPage={false}
                     className={idea.isMainIdea ? "border-primary/50 shadow-md" : ""}
                   />

@@ -18,6 +18,7 @@ interface ResultCardProps {
   difficultyLevel?: number | null;
   tags?: string[];
   isDetailPage?: boolean;
+  imageUrl?: string;
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({
@@ -31,7 +32,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
   timeRequired,
   difficultyLevel,
   tags,
-  isDetailPage = false
+  isDetailPage = false,
+  imageUrl
 }) => {
   return (
     <motion.div
@@ -46,6 +48,15 @@ const ResultCard: React.FC<ResultCardProps> = ({
         className
       )}
     >
+      {imageUrl && (
+        <div className="w-full h-48 overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={ideaTitle || `${itemName} recycling idea`}
+            className="w-full h-full object-cover transition-transform hover:scale-105"
+          />
+        </div>
+      )}
       <div className="p-6 md:p-8">
         <div className="flex items-start justify-between mb-4">
           <div>
