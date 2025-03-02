@@ -89,128 +89,6 @@ export const getItemsByMaterialType = async (materialType: string): Promise<Recy
   }
 };
 
-export const searchRecyclingItems = async (query: string, materialType?: string): Promise<SearchResult | null> => {
-  try {
-    // Search for similar items
-    const { data: similarItems, error: searchError } = await supabase
-      .from('items')
-      .select('id, name, material_type')
-      .ilike('name', `%${query}%`)
-      .order('name');
-    
-    if (searchError) {
-      console.error('Error searching for items:', searchError);
-      return null;
-    }
-    
-    // Try to find exact match first - using case insensitive exact match
-    const { data: exactMatches, error: exactMatchError } = await supabase
-      .from('items')
-      .select('*')
-      .ilike('name', query)
-      .limit(1);
-    
-    if (exactMatchError) {
-      console.error('Error finding exact match:', exactMatchError);
-      return null;
-    }
-    
-    // If we have an exact match, get related recycling ideas
-    if (exactMatches && exactMatches.length > 0) {
-      const item = exactMatches[0];
-      
-      // Get recycling ideas related to this item - in a real scenario, you would link ideas to items
-      // For now we'll fetch random ideas and pretend they're related
-      const { data: relatedIdeas, error: relatedIdeasError } = await supabase
-        .from('ideas')
-        .select('*')
-        .limit(5);
-      
-      if (relatedIdeasError) {
-        console.error('Error finding related ideas:', relatedIdeasError);
-      }
-      
-      // If we don't have any real ideas from the database, generate some custom ones based on the item
-      if (!relatedIdeas || relatedIdeas.length === 0) {
-        const generatedResult = await generateRecyclingIdea(item.name, item.material_type);
-        if (generatedResult) {
-          return generatedResult;
-        }
-      }
-      
-      const formattedIdeas = relatedIdeas ? relatedIdeas.map(idea => ({
-        id: idea.id,
-        title: idea.title,
-        description: idea.description.split('\n'),
-        instructions: idea.instructions,
-        timeRequired: idea.time_required,
-        difficultyLevel: idea.difficulty_level
-      })) : [];
-      
-      // Create a response with the exact match and related ideas
-      return {
-        itemName: item.name,
-        materialType: item.material_type,
-        ideaTitle: formattedIdeas.length > 0 ? formattedIdeas[0].title : null,
-        suggestions: formattedIdeas.length > 0 && Array.isArray(formattedIdeas[0].description) 
-          ? formattedIdeas[0].description 
-          : [
-              'Clean and prepare the item',
-              'Gather necessary tools',
-              'Follow eco-friendly disposal guidelines'
-            ],
-        howTo: formattedIdeas.length > 0 ? formattedIdeas[0].instructions : 
-          'No specific instructions found. Consider general recycling guidelines.',
-        isGeneric: false,
-        timeRequired: formattedIdeas.length > 0 ? formattedIdeas[0].timeRequired : null,
-        difficultyLevel: item.difficulty_level,
-        imageUrl: item.image_url || undefined,
-        similarItems: similarItems?.map(item => ({
-          id: item.id,
-          name: item.name,
-          materialType: item.material_type
-        })),
-        relatedIdeas: formattedIdeas
-      };
-    }
-    
-    // No exact match, generate a custom idea for this item
-    const generatedResult = await generateRecyclingIdea(query, materialType);
-    if (generatedResult) {
-      // Add similar items to the generated result
-      generatedResult.similarItems = similarItems?.map(item => ({
-        id: item.id,
-        name: item.name,
-        materialType: item.material_type
-      }));
-      return generatedResult;
-    }
-    
-    // If generation failed, provide generic response
-    return {
-      itemName: query,
-      materialType: materialType || "Unknown",
-      ideaTitle: "General Recycling Tips",
-      suggestions: [
-        'Research local recycling guidelines',
-        'Clean items thoroughly before recycling',
-        'Separate different materials when possible',
-        'Consider upcycling options before recycling'
-      ],
-      howTo: "Check with your local recycling center for specific guidelines on recycling this item. Different regions have different capabilities and requirements for recycling various materials.",
-      isGeneric: true,
-      similarItems: similarItems?.map(item => ({
-        id: item.id,
-        name: item.name,
-        materialType: item.material_type
-      }))
-    };
-  } catch (error) {
-    console.error('Error in searchRecyclingItems:', error);
-    return null;
-  }
-};
-
 export const generateRecyclingIdea = async (itemName?: string, material?: string): Promise<SearchResult | null> => {
   try {
     const materialTypes = [
@@ -243,68 +121,54 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     // Generate ideas specifically for this item
     const ideaOptions = getItemSpecificIdeas(itemToUse, materialType);
     
-    // Make sure we always have unique titles for different items
-    const itemNameLower = itemToUse.toLowerCase();
-    const materialLower = materialType.toLowerCase();
-    
-    // Create unique titles based on the specific item
-    const uniqueTitles = [
-      `${itemToUse} Upcycling Project`,
-      `Creative ${itemToUse} Reuse`,
-      `DIY ${itemToUse} Transformation`,
-      `Eco-friendly ${itemToUse} Craft`,
-      `Sustainable ${itemToUse} Project`
-    ];
-    
-    // Merge with any specific titles we have
+    // Use a specific title from the options or generate a relevant fallback
     const ideaTitles = ideaOptions.titles.length > 0 
       ? ideaOptions.titles 
-      : uniqueTitles;
+      : [
+          `${itemToUse} Lamp`,
+          `${itemToUse} Storage Container`,
+          `${itemToUse} Wall Organizer`,
+          `${itemToUse} Planter Box`,
+          `${itemToUse} Desk Organizer`
+        ];
     
-    // Select a random title that's appropriate for this specific item
     const randomTitle = ideaTitles[Math.floor(Math.random() * ideaTitles.length)];
-    
-    // Generate item-specific suggestions
-    const defaultSuggestions = [
-      `Clean the ${itemToUse} thoroughly before starting`,
-      `Measure and mark cutting lines if needed for your ${randomTitle.toLowerCase()}`,
-      `Gather appropriate tools for working with ${materialType.toLowerCase()} materials`,
-      `Consider safety precautions when handling ${materialType.toLowerCase()}`,
-      `Prepare a workspace with good ventilation for this project`,
-      `Research sustainable alternatives to disposal`,
-      `Collect complementary materials that work well with ${materialType.toLowerCase()}`,
-      `Plan your design before beginning the transformation`
-    ];
     
     // Get specific or fallback suggestions
     const suggestionPool = ideaOptions.suggestions.length > 0 
       ? ideaOptions.suggestions 
-      : defaultSuggestions;
+      : [
+          `Clean the ${itemToUse} thoroughly before starting`,
+          `Measure and mark cutting lines for your ${randomTitle.toLowerCase()}`,
+          `Carefully cut the ${itemToUse} using appropriate tools for ${materialType.toLowerCase()}`,
+          `Sand rough edges to prevent injuries`,
+          `Apply a primer suitable for ${materialType.toLowerCase()} before painting`,
+          `Use a weatherproof sealant for outdoor projects`,
+          `Add rubber feet to the bottom to prevent scratching surfaces`,
+          `Install LED lights for illuminated projects`,
+          `Add decorative elements that complement your ${randomTitle.toLowerCase()}`
+        ];
     
     // Select a subset of the suggestions
     const shuffledSuggestions = [...suggestionPool].sort(() => 0.5 - Math.random());
-    const selectedSuggestions = shuffledSuggestions.slice(0, Math.floor(Math.random() * 2) + 4); // 4-5 suggestions
+    const selectedSuggestions = shuffledSuggestions.slice(0, Math.floor(Math.random() * 3) + 3);
     
     // Generate specific instructions based on the chosen title and item
-    let instructions = generateRelevantInstructions(itemToUse, materialType, randomTitle);
+    let instructions = ideaOptions.instructions;
+    
+    // If no specific instructions, generate based on the selected title
+    if (!instructions) {
+      instructions = generateSpecificInstructions(itemToUse, materialType, randomTitle);
+    }
     
     // Set reasonable difficulty and time values
     const difficulty = ideaOptions.difficultyLevel || Math.floor(Math.random() * 5) + 1;
     const time = ideaOptions.timeRequired || (Math.floor(Math.random() * 6) + 1) * 15;
     
-    // Use specific tags or fallback with some customization based on the item
-    const defaultTags = [
-      "Upcycle", 
-      `${materialType} Craft`, 
-      "Sustainable", 
-      "DIY Project", 
-      `${materialType} Reuse`,
-      "Eco-friendly"
-    ];
-    
+    // Use specific tags or fallback
     const possibleTags = ideaOptions.tags.length > 0 
       ? ideaOptions.tags 
-      : defaultTags;
+      : ["Upcycle", "Home Decor", "Functional", "Storage", "Gardening", "Organization", "DIY", "Eco-friendly"];
     
     const shuffledTags = [...possibleTags].sort(() => 0.5 - Math.random());
     const selectedTags = shuffledTags.slice(0, Math.floor(Math.random() * 3) + 2);
@@ -332,135 +196,37 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
   }
 };
 
-function generateRelevantInstructions(itemName: string, materialType: string, ideaTitle: string): string {
-  const itemNameLower = itemName.toLowerCase();
+// Helper function to generate specific instructions based on the selected title
+function generateSpecificInstructions(itemName: string, materialType: string, ideaTitle: string): string {
   const titleLower = ideaTitle.toLowerCase();
   
-  // Plastic Bag specific instructions
-  if (itemNameLower.includes("plastic bag")) {
-    if (titleLower.includes("tote") || titleLower.includes("reusable bag")) {
-      return "Step 1: Collect 5-10 plastic bags of similar size and thickness.\nStep 2: Clean and dry the bags thoroughly to remove any residue.\nStep 3: Fold each bag neatly and cut off the handles and bottom seam.\nStep 4: Stack the bags and iron them between two sheets of parchment paper on low heat.\nStep 5: Once fused, cut the resulting material into a suitable pattern for a tote bag.\nStep 6: Fold and sew the sides to create your bag structure.\nStep 7: Add fabric or more plastic for sturdy handles.\nStep 8: Decorate with fabric paint or permanent markers if desired.\nStep 9: Your durable, waterproof tote is ready to replace future single-use bags.";
-    }
-    
-    if (titleLower.includes("plarn") || titleLower.includes("crochet")) {
-      return "Step 1: Collect 15-20 clean plastic bags for a small project.\nStep 2: Flatten each bag and cut off the handles and bottom seam.\nStep 3: Cut the remaining rectangle into 1-inch strips to create plastic yarn ('plarn').\nStep 4: Connect the strips by looping one through another and pulling tight.\nStep 5: Roll your plarn into a ball to make it easier to work with.\nStep 6: Use a large crochet hook (6mm or larger) to crochet your project.\nStep 7: For beginners, start with a simple stitch like single crochet.\nStep 8: Shape into a mat, basket, or even a durable shopping bag.\nStep 9: Finish off your project by securing the final stitch and tucking in loose ends.";
-    }
-    
-    if (titleLower.includes("art") || titleLower.includes("decoration")) {
-      return "Step 1: Collect plastic bags in various colors for an interesting palette.\nStep 2: Clean and dry all bags thoroughly.\nStep 3: Cut the bags into desired shapes - strips, circles, or other forms.\nStep 4: Prepare a base for your artwork, such as canvas or cardboard.\nStep 5: Arrange the plastic pieces into your design.\nStep 6: Secure pieces with non-toxic glue suitable for plastic materials.\nStep 7: Layer pieces to create dimension and visual interest.\nStep 8: Consider adding a protective coating to preserve your artwork.\nStep 9: Frame or mount your finished piece for display.";
-    }
-    
-    if (titleLower.includes("stuffing") || titleLower.includes("pillow")) {
-      return "Step 1: Collect 15-20 clean, dry plastic bags.\nStep 2: Tear or cut each bag into smaller pieces for better flexibility.\nStep 3: Choose a pillowcase or create one from upcycled fabric.\nStep 4: Stuff the fabric cover with the plastic bag pieces, distributing evenly.\nStep 5: Add more bags until you reach your desired firmness.\nStep 6: Sew the opening closed with a hidden stitch.\nStep 7: This pillow is waterproof and great for outdoor use.\nStep 8: For indoor pillows, consider adding a layer of fabric batting around the plastic for softness.\nStep 9: Your upcycled pillow is washable and will maintain its shape over time.";
-    }
-    
-    if (titleLower.includes("waterproof") || titleLower.includes("protection")) {
-      return "Step 1: Select several clean, intact plastic bags.\nStep 2: Cut open the bags to create flat plastic sheets.\nStep 3: Layer multiple sheets together for strength.\nStep 4: Iron between parchment paper on low heat to fuse them together.\nStep 5: Cut the fused plastic to the size needed for your waterproof covering.\nStep 6: For added durability, reinforce edges with duct tape or by sewing.\nStep 7: Create folded edges for a more finished look.\nStep 8: Add grommets to corners if you need to secure the covering.\nStep 9: Use your waterproof covering to protect outdoor items or as emergency rain protection.";
-    }
-    
-    // General plastic bag project if no specific match
-    return "Step 1: Clean and dry plastic bags thoroughly to remove any residue.\nStep 2: Cut the bags as needed for your specific project (removing handles and seams).\nStep 3: If fusing bags together, place between parchment paper and iron on low heat.\nStep 4: For weaving or crocheting, cut bags into strips to create plastic yarn ('plarn').\nStep 5: Shape your material according to your project design.\nStep 6: Join pieces using appropriate techniques: heat fusing, sewing, or tying.\nStep 7: Reinforce stress points for durability.\nStep 8: Add any decorative or functional elements to complete your project.\nStep 9: Your upcycled plastic bag creation reduces waste while creating something useful.";
+  // For lamp projects
+  if (titleLower.includes("lamp") || titleLower.includes("light") || titleLower.includes("lantern")) {
+    return `Step 1: Clean ${itemName} thoroughly and remove any labels.\nStep 2: Mark where you'll cut to create the lamp shape.\nStep 3: Carefully cut the ${itemName} using tools appropriate for ${materialType}.\nStep 4: Sand any rough edges for safety.\nStep 5: Drill a hole for the cord if needed.\nStep 6: Install a socket kit with cord according to manufacturer's instructions.\nStep 7: Add decorative elements to the exterior of your lamp.\nStep 8: Install an appropriate bulb for your lamp size.\nStep 9: Test the lamp to ensure it works properly and safely.`;
   }
   
-  // Plastic Bottle specific instructions
-  if (itemNameLower.includes("plastic bottle")) {
-    if (titleLower.includes("self-watering planter") || (titleLower.includes("planter") && !titleLower.includes("tower"))) {
-      return "Step 1: Take a clean plastic bottle and remove all labels and adhesive.\nStep 2: Cut the bottle horizontally about 1/3 from the bottom using sharp scissors.\nStep 3: Drill or punch 3-4 small drainage holes in the bottom section.\nStep 4: Cut small notches around the top edge of the bottom section.\nStep 5: Take the top section and invert it, fitting it into the bottom section.\nStep 6: Thread a piece of cotton rope or fabric strip through the bottle cap to act as a wick.\nStep 7: Fill the top section with potting soil, leaving the wick extending into the soil.\nStep 8: Plant your seeds or small plants in the soil.\nStep 9: Fill the bottom reservoir with water and place in a sunny location.";
-    }
-    
-    if (titleLower.includes("bird feeder")) {
-      return "Step 1: Clean a plastic bottle thoroughly and remove the label.\nStep 2: Mark feeding hole locations about 1/3 up from the bottom, on opposite sides.\nStep 3: Cut small holes (1-2 inches diameter) at your marked spots using a sharp knife.\nStep 4: Drill or punch small drainage holes in the very bottom of the bottle.\nStep 5: Insert wooden dowels or spoons through the bottle just below the feeding holes to create perches.\nStep 6: Create a roof by cutting a circle from plastic or other waterproof material.\nStep 7: Attach the roof over the bottle cap using strong adhesive or wire.\nStep 8: Punch two small holes at the top and thread strong cord for hanging.\nStep 9: Fill with birdseed through the bottle opening and hang in a sheltered location.";
-    }
-    
-    if (titleLower.includes("desk organizer")) {
-      return "Step 1: Clean and dry several plastic bottles of various sizes.\nStep 2: Cut the bottles at different heights - some tall for pens, some shorter for paper clips.\nStep 3: Sand the cut edges to smooth any rough spots.\nStep 4: Arrange the cut bottles on a base made of cardboard or wood.\nStep 5: Mark their positions and use hot glue to secure them to the base.\nStep 6: Paint the entire organizer with plastic-specific spray paint.\nStep 7: Apply 2-3 thin coats, allowing drying time between each.\nStep 8: Optional: Add decorative washi tape or vinyl stickers for personality.\nStep 9: Allow to dry completely before adding your office supplies.";
-    }
-    
-    if (titleLower.includes("wind spinner")) {
-      return "Step 1: Clean a plastic bottle and remove all labels.\nStep 2: Draw a spiral pattern around the bottle from top to bottom.\nStep 3: Carefully cut along the spiral line using sharp scissors.\nStep 4: Gently pull the spiral to extend it vertically.\nStep 5: Punch a small hole at the top of the bottle neck.\nStep 6: Thread fishing line or string through the hole.\nStep 7: Decorate the spinner with weatherproof paint in bright colors.\nStep 8: Allow paint to dry completely.\nStep 9: Hang your spinner outdoors where it can catch the breeze.";
-    }
-    
-    if (titleLower.includes("herb garden tower") || titleLower.includes("garden tower")) {
-      return "Step 1: Collect 4-5 identical plastic bottles and clean thoroughly.\nStep 2: Cut the bottom off each bottle except for one (this will be the base).\nStep 3: Cut a large hole in each bottle cap, large enough for a plant to grow through.\nStep 4: Thread a strong dowel or PVC pipe through all bottle caps to create central support.\nStep 5: Screw the caps onto the bottles, assembling them in a stack.\nStep 6: Cut a 3-inch diameter hole in the side of each bottle for planting.\nStep 7: Fill the tower with potting soil through the top opening.\nStep 8: Plant herbs or small plants in each side opening.\nStep 9: Place in a sunny location and water from the top, allowing it to filter down.";
-    }
-    
-    // General plastic bottle project instructions if no specific match
-    return "Step 1: Clean your plastic bottle thoroughly and remove all labels.\nStep 2: Plan your design and mark cutting lines with a permanent marker.\nStep 3: Cut the bottle carefully using sharp scissors or a utility knife.\nStep 4: Sand any rough edges to prevent injury.\nStep 5: Assemble the cut pieces according to your project design.\nStep 6: Use hot glue or appropriate adhesive to secure connections.\nStep 7: Paint the exterior with plastic-specific paint if desired.\nStep 8: Allow to dry completely between coats.\nStep 9: Add any finishing touches or decorative elements to complete your project.";
+  // For planter projects
+  if (titleLower.includes("planter") || titleLower.includes("garden") || titleLower.includes("pot")) {
+    return `Step 1: Clean ${itemName} thoroughly.\nStep 2: Drill or punch drainage holes in the bottom.\nStep 3: Add a layer of gravel or pebbles at the bottom for drainage.\nStep 4: Decorate the exterior with paint suitable for ${materialType}.\nStep 5: Allow paint to dry completely.\nStep 6: Add potting soil leaving room at the top.\nStep 7: Plant your chosen seeds or small plants.\nStep 8: Water lightly and place in appropriate sunlight.\nStep 9: Check soil moisture regularly and maintain as needed.`;
   }
   
-  // Glass Jar specific instructions
-  if (itemNameLower.includes("glass jar") || itemNameLower.includes("mason jar")) {
-    if (titleLower.includes("herb garden") || titleLower.includes("indoor garden")) {
-      return "Step 1: Clean your mason jar thoroughly and allow to dry completely.\nStep 2: Using a diamond drill bit and water, carefully drill 3-4 drainage holes in the bottom.\nStep 3: Add a layer of small pebbles at the bottom for drainage (about 1 inch).\nStep 4: Optional: Add a small layer of activated charcoal to prevent mold.\nStep 5: Fill the jar about 3/4 full with potting soil formulated for herbs.\nStep 6: Plant your herb seeds or small seedlings according to package directions.\nStep 7: Water lightly until just moist, not soggy.\nStep 8: Place in a sunny windowsill that gets at least 6 hours of light.\nStep 9: Water when the top inch of soil feels dry to the touch.";
-    }
-    
-    if (titleLower.includes("pendant light")) {
-      return "Step 1: Thoroughly clean your mason jar and remove the lid (keep the rim).\nStep 2: Using a hammer and nail, carefully punch a hole in the center of the lid.\nStep 3: Thread your pendant light cord through this hole from inside the lid.\nStep 4: Secure the socket to the lid following the kit instructions.\nStep 5: Select a decorative Edison bulb that will fit inside the jar.\nStep 6: Screw the rim back onto the jar with the light assembly.\nStep 7: Test the light to ensure it works properly.\nStep 8: Hang your new pendant light using secure mounting hardware.\nStep 9: Adjust the cord length as needed for your space.";
-    }
-    
-    if (titleLower.includes("bathroom organizer") || titleLower.includes("organizer")) {
-      return "Step 1: Clean 3-4 mason jars and remove any labels.\nStep 2: If desired, paint the jars with glass paint or frosted spray.\nStep 3: Allow paint to dry completely (usually 24 hours).\nStep 4: Cut a piece of wood to serve as the mounting board.\nStep 5: Sand and stain or paint the wood as desired.\nStep 6: Attach pipe clamps or hose clamps to the board, spaced evenly.\nStep 7: Tighten the clamps around each jar, securing them to the board.\nStep 8: Mount the board to the wall using appropriate anchors and screws.\nStep 9: Fill jars with bathroom items like cotton balls, q-tips, and toothbrushes.";
-    }
-    
-    // General glass jar project instructions if no specific match
-    return "Step 1: Clean your glass jar thoroughly and remove all labels.\nStep 2: If painting, use glass-specific paint for best adhesion.\nStep 3: For cutting or drilling, use appropriate glass tools and safety equipment.\nStep 4: Prepare any embellishments or decorative elements.\nStep 5: Assemble your project according to your specific design.\nStep 6: Allow adequate drying time for any adhesives or paint.\nStep 7: Apply a sealer if the project will be exposed to moisture.\nStep 8: Add any hardware needed for hanging or displaying.\nStep 9: Allow the project to cure completely before using.";
+  // For storage/organizer projects
+  if (titleLower.includes("storage") || titleLower.includes("organizer") || titleLower.includes("holder") || titleLower.includes("container")) {
+    return `Step 1: Clean ${itemName} thoroughly and remove any labels.\nStep 2: Mark where you'll cut or modify the ${itemName}.\nStep 3: Cut or shape as needed for your organizer design.\nStep 4: Sand any rough edges for safety.\nStep 5: Create dividers if needed for organization.\nStep 6: Paint or decorate the exterior to match your décor.\nStep 7: Add labels if needed for easy identification.\nStep 8: Apply a protective clear coat for durability.\nStep 9: Install in your desired location and fill with items.`;
   }
   
-  // Paper specific instructions
-  if (itemNameLower.includes("paper") || itemNameLower.includes("newspaper") || itemNameLower.includes("magazine")) {
-    if (titleLower.includes("paper mache")) {
-      return "Step 1: Tear your paper into small strips, about 1 inch wide and 3-4 inches long.\nStep 2: Prepare a paste by mixing equal parts flour and water until smooth.\nStep 3: Create a basic shape using crumpled newspaper, wire, or a balloon.\nStep 4: Dip paper strips into the paste, removing excess with your fingers.\nStep 5: Layer the wet strips over your base shape, overlapping slightly.\nStep 6: Build up 3-4 layers, allowing some drying time between layers.\nStep 7: Allow the creation to dry completely (usually 24-48 hours).\nStep 8: Once dry, paint with acrylic paint in your desired colors.\nStep 9: Finish with a clear sealer to protect and preserve your creation.";
-    }
-    
-    if (titleLower.includes("basket") || titleLower.includes("container")) {
-      return "Step 1: Collect several newspapers or magazines.\nStep 2: Fold each page lengthwise multiple times to create tight tubes.\nStep 3: For the base, arrange 8-10 tubes in a parallel pattern.\nStep 4: Weave perpendicular tubes through the base tubes to create a tight grid.\nStep 5: Bend the tubes upward 90 degrees to begin forming the sides.\nStep 6: Continue weaving additional tubes horizontally around the upright tubes.\nStep 7: Secure the ends by tucking them under adjacent tubes.\nStep 8: Trim any excess and fold down the top tubes to finish the rim.\nStep 9: Spray with paint and sealer for a more durable finish.";
-    }
-    
-    if (titleLower.includes("origami") || titleLower.includes("fold")) {
-      return "Step 1: Select a clean, square piece of paper (cut from magazine or newspaper if needed).\nStep 2: Follow basic origami folding techniques - valley folds and mountain folds.\nStep 3: Start with simple designs like boxes, boats, or animals.\nStep 4: Make precise creases by running your fingernail along each fold.\nStep 5: Follow your pattern step by step, checking alignment at each stage.\nStep 6: For complex designs, use lighter weight paper that holds creases well.\nStep 7: If using printed paper, consider which patterns will be visible in the final design.\nStep 8: Display your finished origami on a shelf or string multiple pieces for a mobile.\nStep 9: Once you've mastered basic forms, try combining multiple origami pieces into larger sculptures.";
-    }
-    
-    if (titleLower.includes("bead") || titleLower.includes("jewelry")) {
-      return "Step 1: Cut long triangular strips from colorful magazine pages.\nStep 2: Starting from the wide end, wrap the paper tightly around a skewer or toothpick.\nStep 3: Apply a small amount of glue to the final corner to secure the bead.\nStep 4: Slide the bead to the end of the skewer but don't remove it yet.\nStep 5: Apply a coat of clear nail polish or Mod Podge to seal the bead.\nStep 6: Allow to dry completely, then add a second coat for durability.\nStep 7: Once fully dry, remove beads from skewers.\nStep 8: String beads onto elastic cord, fishing line, or jewelry wire.\nStep 9: Add clasps or knots to complete your bracelet or necklace.";
-    }
-    
-    // General paper project instructions if no specific match
-    return "Step 1: Collect and sort your paper materials by color, thickness, and size.\nStep 2: Clean the paper by removing any staples, stickers, or adhesives.\nStep 3: Based on your project, cut or tear the paper into appropriate sizes.\nStep 4: For most paper crafts, a simple glue of flour and water works well.\nStep 5: Build your project in layers, allowing drying time as needed.\nStep 6: Reinforce stress points with additional layers of paper or tape.\nStep 7: Once assembled, allow your project to dry completely.\nStep 8: Decorate with paint, markers, or additional paper elements.\nStep 9: Apply a sealer appropriate for your project's intended use to protect it.";
+  // For wall décor projects
+  if (titleLower.includes("wall") || titleLower.includes("art") || titleLower.includes("décor") || titleLower.includes("decor") || titleLower.includes("frame")) {
+    return `Step 1: Clean ${itemName} thoroughly.\nStep 2: Sketch your design on paper first.\nStep 3: Mark cutting or assembly lines on the ${itemName}.\nStep 4: Cut or shape as needed using appropriate tools.\nStep 5: Sand rough edges for safety and appearance.\nStep 6: Paint or decorate according to your design plan.\nStep 7: Add hanging hardware to the back.\nStep 8: Apply a protective clear coat if needed.\nStep 9: Hang securely on your wall at the desired height.`;
   }
   
-  // T-shirt specific instructions
-  if (itemNameLower.includes("t-shirt") || itemNameLower.includes("shirt") || itemNameLower.includes("textile")) {
-    if (titleLower.includes("market bag") || titleLower.includes("tote")) {
-      return "Step 1: Start with a clean, unwanted t-shirt.\nStep 2: Lay it flat and cut off the sleeves along the seams.\nStep 3: Cut out the neckline, making the opening wider - this will be the top of your bag.\nStep 4: Turn the shirt inside out.\nStep 5: Using fabric scissors, cut fringe strips along the bottom of the shirt, about 3-4 inches long and 1 inch wide.\nStep 6: Tie each fringe strip to the one next to it using double knots, working your way across the entire bottom.\nStep 7: Once all strips are tied, turn the shirt right-side out.\nStep 8: Trim any uneven edges or loose threads.\nStep 9: Your market bag is ready to use for groceries, gym clothes, or beach essentials.";
-    }
-    
-    if (titleLower.includes("quilt") || titleLower.includes("memory")) {
-      return "Step 1: Collect 12-20 t-shirts with sentimental value or interesting designs.\nStep 2: Wash and iron all shirts before cutting.\nStep 3: Cut equal-sized squares from each shirt (typically 12-15 inches).\nStep 4: If the fabric is stretchy, apply lightweight fusible interfacing to the back.\nStep 5: Arrange the squares in a pleasing grid pattern.\nStep 6: Pin adjacent squares together and sew with a 1/2 inch seam allowance.\nStep 7: Sew rows together to complete the quilt top.\nStep 8: Add batting and backing fabric, then pin all layers together.\nStep 9: Quilt as desired either by hand, machine, or using the tie method with yarn at intersections.";
-    }
-    
-    if (titleLower.includes("rug")) {
-      return "Step 1: Collect 5-10 old t-shirts in coordinating colors.\nStep 2: Cut each shirt into continuous 1-inch strips, creating t-shirt yarn.\nStep 3: Stretch each strip to cause it to curl into a rope-like strand.\nStep 4: Join strips by cutting a small slit in the ends and looping them together.\nStep 5: Separate your t-shirt yarn into three equal bundles.\nStep 6: Tie the ends together and secure to a stable surface.\nStep 7: Braid the three bundles tightly and consistently.\nStep 8: Once your braid is long enough, begin coiling it into a spiral.\nStep 9: Use a large needle and strong thread to sew adjacent coils together as you work.";
-    }
-    
-    // General t-shirt project instructions if no specific match
-    return "Step 1: Wash and dry your t-shirt thoroughly before beginning.\nStep 2: Plan your design and create a paper pattern if needed.\nStep 3: Cut the shirt according to your pattern using sharp fabric scissors.\nStep 4: If sewing, pin pieces together before stitching.\nStep 5: Use an appropriate needle for knit fabrics if sewing by machine.\nStep 6: Reinforce seams that will receive stress or stretching.\nStep 7: Turn items right-side out if applicable and press seams.\nStep 8: Add any closures, decorative elements, or embellishments.\nStep 9: Give your creation a final press and trim any loose threads.";
+  // For furniture projects
+  if (titleLower.includes("table") || titleLower.includes("chair") || titleLower.includes("bench") || titleLower.includes("stool") || titleLower.includes("furniture")) {
+    return `Step 1: Clean ${itemName} thoroughly.\nStep 2: Create a design plan with measurements.\nStep 3: Cut or shape the ${itemName} as needed.\nStep 4: Sand all surfaces thoroughly for safety.\nStep 5: Join pieces together using appropriate fasteners or adhesives.\nStep 6: Reinforce joints for stability.\nStep 7: Apply paint, stain, or sealant suitable for ${materialType}.\nStep 8: Allow to dry completely between coats.\nStep 9: Add any finishing touches like felt pads on the bottom.`;
   }
   
-  // Generic fallback instructions based on material type
-  const materialInstructions: Record<string, string> = {
-    "Plastic": "Step 1: Clean your plastic item thoroughly with soap and water.\nStep 2: Remove any labels or adhesive using oil or alcohol.\nStep 3: Draw your design or cutting lines with a permanent marker.\nStep 4: Carefully cut the plastic using appropriate scissors or tools.\nStep 5: Sand any rough edges to prevent injuries.\nStep 6: Apply plastic primer if you plan to paint the item.\nStep 7: Paint with plastic-specific paints in thin, even coats.\nStep 8: Allow adequate drying time between coats.\nStep 9: Apply a clear sealant to protect your finished project.",
-    
-    "Paper": "Step 1: Sort your paper materials by thickness and size.\nStep 2: Remove any staples, clips, or non-paper elements.\nStep 3: Cut or tear paper to the required dimensions for your project.\nStep 4: Create a paste using 1 part flour to 1 part water if needed.\nStep 5: Layer or fold the paper according to your design.\nStep 6: Allow adequate drying time between steps.\nStep 7: Reinforce structural elements with additional layers.\nStep 8: Decorate with paint, markers, or additional paper elements.\nStep 9: Apply a sealer to protect your finished paper project.",
-    
-    "Glass": "Step 1: Clean the glass thoroughly with vinegar and water solution.\nStep 2: Plan your design and mark any cutting lines with a non-permanent marker.\nStep 3: Protect your work surface and wear safety glasses if cutting glass.\nStep 4: Apply glass paint, frosting spray, or etching cream as desired.\nStep 5: Allow proper drying or setting time according to product instructions.\nStep 6: Apply additional coats or colors as needed for your design.\nStep 7: Heat-set painted designs according to paint manufacturer instructions.\nStep 8: Add any embellishments like beads, wire, or decorative elements.\nStep 9: Apply a protective clear coat if recommended for your materials.",
-    
-    "Metal": "Step 1: Clean the metal surface thoroughly to remove dirt and oils.\nStep 2: Remove any rust using vinegar solution or commercial rust remover.\nStep 3: Sand the surface to create better adhesion for paint or finishes.\nStep 4: Apply a metal primer and allow to dry completely.\nStep 5: Paint with metal-specific paint in thin, even coats.\nStep 6: Create any desired patterns, holes, or bends in the metal.\nStep 7: Add decorative elements like beads, wire, or other materials.\nStep 8: Seal with a clear protective coating appropriate for your project's use.\nStep 9: Attach any hardware needed for hanging or displaying your creation.",
-    
-    "Textile": "Step 1: Wash and dry the fabric to remove any sizing or dirt.\nStep 2: Iron the fabric to remove wrinkles for easier cutting.\nStep 3: Create or trace a pattern onto the fabric with fabric markers.\nStep 4: Cut the fabric precisely using sharp fabric scissors.\nStep 5: Pin pieces together if you'll be sewing multiple sections.\nStep 6: Sew the pieces together using appropriate thread and needle.\nStep 7: Turn the project right-side out if applicable and press seams.\nStep 8: Add any closures, decorative elements, or embellishments.\nStep 9: Give your creation a final press and trim any loose threads."
-  };
-  
-  // If we have a specific material instruction, use it, otherwise use the generic one
-  return materialInstructions[materialType] || `Step 1: Clean the ${itemName} thoroughly before beginning.\nStep 2: Gather all necessary tools and materials for your project.\nStep 3: Measure and mark any cutting lines needed for your design.\nStep 4: Carefully cut or modify the item according to your plan.\nStep 5: Smooth any rough edges or surfaces as appropriate for the material.\nStep 6: Assemble the components of your ${ideaTitle}.\nStep 7: Secure parts together using appropriate adhesive or fasteners.\nStep 8: Apply paint, fabric, or decorative elements as desired.\nStep 9: Allow your project to dry completely before using.`;
+  // Default instructions if none of the above categories match
+  return `Step 1: Clean ${itemName} thoroughly before starting.\nStep 2: Sketch your design for the ${ideaTitle} on paper.\nStep 3: Gather all necessary tools and materials.\nStep 4: Mark any cutting lines on the ${itemName}.\nStep 5: Carefully cut or modify the ${itemName} according to your design.\nStep 6: Sand any rough edges for safety and appearance.\nStep 7: Paint or decorate as desired with materials suitable for ${materialType}.\nStep 8: Allow to dry completely.\nStep 9: Add any final details or functional elements to complete your project.`;
 }
 
 function getItemSpecificIdeas(itemName: string, materialType: string) {
@@ -476,39 +242,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
     timeRequired: null
   };
   
-  // Plastic Bag specific ideas
-  if (itemNameLower.includes("plastic bag")) {
-    return {
-      titles: [
-        "Plastic Bag Tote Bag",
-        "Plarn Crochet Basket",
-        "Plastic Bag Waterproof Lining",
-        "Plastic Bag Art Installation",
-        "Fused Plastic Fabric Wallet",
-        "Plastic Bag Pillow Stuffing",
-        "Plastic Bag Waterproof Ground Cover",
-        "Plastic Bag Woven Mat"
-      ],
-      suggestions: [
-        "Collect clean, dry plastic bags of similar thickness",
-        "Sort bags by color for more attractive projects",
-        "For fusing plastic bags, use parchment paper and an iron on low heat",
-        "When crocheting with plastic yarn ('plarn'), use a larger hook than normal",
-        "Cut bags into continuous strips by spiral cutting for longer plarn strands",
-        "Layer multiple bags for stronger, more durable material",
-        "Practice folding techniques for compact storage of reusable bags",
-        "For outdoor projects, choose sturdier, thicker plastic bags"
-      ],
-      instructions: "To create a Plarn Crochet Basket: Begin by collecting 15-20 clean plastic bags. Cut each bag into 1-inch continuous strips to create 'plarn' (plastic yarn). Join the strips by looping one through another and pulling tight. Use a large crochet hook (6mm or larger) and start with a magic circle of 6-8 single crochet stitches. Increase stitches in each round until reaching desired base size. Once the base is complete, crochet each round without increasing to form sides. Continue until reaching desired height, then finish off by securing the final stitch. Your durable, waterproof basket is perfect for storage in bathrooms, crafting areas, or gardens.",
-      tags: ["Plastic Bag", "Upcycle", "No-Sew", "Waterproof", "Storage", "Crochet", "Plarn", "Eco-Friendly"],
-      imageKeywords: "plastic+bag+crochet+basket",
-      difficultyLevel: 3,
-      timeRequired: 120
-    };
-  }
-  
-  // Mason Jar specific ideas
-  else if (itemNameLower.includes("mason jar") || itemNameLower.includes("glass jar")) {
+  if (itemNameLower.includes("mason jar") || itemNameLower.includes("glass jar")) {
     return {
       titles: [
         "Mason Jar Indoor Herb Garden",
@@ -530,7 +264,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "Line the inside with contact paper for a decorative effect",
         "For kitchen organizers, group 3-4 jars together on a rotating base"
       ],
-      instructions: "To create a Mason Jar Pendant Light: Start by thoroughly cleaning your mason jar and removing the lid (keep the rim). Using a hammer and nail, carefully punch a hole in the center of the lid. Thread your pendant light cord through this hole from inside the lid. Next, secure the socket to the lid following the kit instructions. Select a decorative Edison bulb that will fit inside the jar. Screw the rim back onto the jar with the light assembly. Finally, hang your new pendant light and adjust the cord length as needed. This makes an excellent light fixture for kitchen islands, dining areas, or bedside tables.",
+      instructions: "Step 1: Thoroughly clean your mason jar and remove the lid (keep the rim).\nStep 2: Using a hammer and nail, carefully punch a hole in the center of the lid.\nStep 3: Thread your pendant light cord through this hole from inside the lid.\nStep 4: Secure the socket to the lid following the kit instructions.\nStep 5: Select a decorative Edison bulb that will fit inside the jar.\nStep 6: Screw the rim back onto the jar with the light assembly.\nStep 7: Test the light to ensure it works properly.\nStep 8: Hang your new pendant light using secure mounting hardware.\nStep 9: Adjust the cord length as needed for your space.",
       tags: ["Mason Jar", "Kitchen", "Lighting", "Home Decor", "Upcycle", "Farmhouse Style", "Functional"],
       imageKeywords: "mason+jar+pendant+light",
       difficultyLevel: 3,
@@ -538,7 +272,6 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
     };
   }
   
-  // Plastic Bottle specific ideas
   else if (itemNameLower.includes("plastic bottle")) {
     return {
       titles: [
@@ -554,82 +287,540 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
       suggestions: [
         "Cut the bottle horizontally to create two sections - the top will be inverted into the bottom section",
         "Use a heated nail to melt clean holes rather than cutting with scissors for cleaner results",
-        "Add a wick made from cotton rope to connect the water reservoir and soil",
-        "Paint with plastic-specific spray paint for better adhesion",
-        "Group multiple bottles together for larger projects",
-        "Add small rocks or marbles at the bottom for stability",
-        "Use UV-resistant paint for outdoor projects",
-        "Consider adding LED lights inside for illuminated night projects"
+        "Add a wick made of cotton rope between the water reservoir and the soil",
+        "For multi-bottle projects, use zip ties or hot glue to connect bottles securely",
+        "Cover the exterior with rope wrapping for a natural look",
+        "Use biodegradable paint for outdoor projects to minimize environmental impact",
+        "For the hydroponic system, create holes for net pots in the bottle sides",
+        "For the organizer, cut bottles at varying heights to hold different items"
       ],
-      instructions: "To create a Self-Watering Planter: Clean a plastic bottle thoroughly and remove labels. Cut the bottle horizontally about 1/3 from the bottom. Drill or punch 3-4 small drainage holes in the bottom section. Cut small notches around the top edge of the bottom section. Take the top section, remove the cap, and invert it into the bottom section. Thread a piece of cotton rope through the bottle neck to act as a wick. Fill the top section with potting soil, ensuring the wick extends into the soil. Plant your seeds or small plants. Fill the bottom reservoir with water and place in a sunny location. The wick will draw water up to the soil as needed.",
-      tags: ["Plastic Upcycle", "Gardening", "Self-Watering", "Indoor Plants", "Eco-Friendly", "Sustainable", "DIY"],
+      instructions: "Step 1: Take a clean plastic bottle and cut it horizontally about 1/3 from the bottom.\nStep 2: This bottom section will be your water reservoir.\nStep 3: Take the top section and invert it so the bottle neck points downward.\nStep 4: Insert a piece of cotton rope through the bottle neck to serve as a wick.\nStep 5: Fill the inverted top section with potting soil, ensuring the wick extends up into the soil.\nStep 6: Plant your seedling or seeds in the soil.\nStep 7: Fill the bottom reservoir with water.\nStep 8: Place the soil-filled top section into the bottom reservoir, with the wick extending into the water.\nStep 9: As the soil dries out, it will draw water up through the wick, keeping your plants watered for days.",
+      tags: ["Gardening", "Self-Watering", "Indoor Plants", "Plastic Upcycle", "Sustainable", "Hydroponic", "Zero Waste"],
       imageKeywords: "plastic+bottle+self+watering+planter",
       difficultyLevel: 2,
       timeRequired: 30
     };
   }
   
-  // T-shirt specific ideas
-  else if (itemNameLower.includes("t-shirt") || itemNameLower.includes("shirt")) {
+  else if (itemNameLower.includes("glass bottle")) {
     return {
       titles: [
-        "No-Sew T-Shirt Tote Bag",
-        "T-Shirt Memory Quilt",
-        "T-Shirt Braided Rug",
-        "T-Shirt Pillow Cover",
-        "T-Shirt Dog Toy",
-        "T-Shirt Wall Art",
-        "T-Shirt Produce Bags",
-        "T-Shirt Yarn Plant Hanger"
+        "Glass Bottle Tiki Torch",
+        "Bottle Fairy Light Lamp",
+        "Wine Bottle Herb Garden",
+        "Glass Bottle Soap Dispenser",
+        "Bottle Terrarium Garden",
+        "Layered Sand Art Bottle",
+        "Glass Bottle Bird Feeder",
+        "Bottle Hanging Planter"
       ],
       suggestions: [
-        "Choose t-shirts with meaningful designs or colors for memory projects",
-        "Use fusible interfacing on stretchy shirts to make them easier to sew",
-        "Cut t-shirts into continuous strips to create 't-shirt yarn' for crochet or braiding projects",
-        "Save the neckbands and sleeves for smaller projects like bracelets or headbands",
-        "Wash and dry all shirts before beginning your project to prevent shrinkage later",
-        "Cut squares or rectangles with a cardboard template for consistent sizing",
-        "Use a rotary cutter and mat for cleaner, straighter cuts",
-        "For multi-shirt projects, organize by color for a cohesive design"
+        "Use a bottle cutting kit to cleanly cut glass bottles for certain projects",
+        "Add copper or LED string lights inside bottles for beautiful lighting effects",
+        "For outdoor projects, use weather-resistant materials and sealants",
+        "Consider etching designs onto the glass surface with etching cream",
+        "Use wine bottles with interesting shapes or colors for more decorative projects",
+        "Add a pour spout for bottles repurposed as oil or soap dispensers",
+        "For terrariums, layer activated charcoal, soil, and decorative stones",
+        "Use a glass drill bit with water to safely drill drainage holes"
       ],
-      instructions: "To create a No-Sew T-Shirt Tote Bag: Start with a clean t-shirt and lay it flat. Cut off the sleeves along the seams. Cut out the neckline, making the opening wider - this will be the top of your bag. Turn the shirt inside out. Using fabric scissors, cut fringe strips along the bottom of the shirt, about 3-4 inches long and 1 inch wide. Tie each fringe strip to the one next to it using double knots, working your way across the entire bottom. Once all strips are tied, turn the shirt right-side out. Your market bag is ready to use for groceries, gym clothes, or beach essentials.",
-      tags: ["T-Shirt", "No-Sew", "Upcycle", "Tote Bag", "Quick Project", "Eco-Friendly", "Beginner Friendly"],
-      imageKeywords: "tshirt+tote+bag+no+sew",
+      instructions: "Step 1: Clean your glass bottle thoroughly and remove all labels.\nStep 2: For the Fairy Light Lamp, ensure the bottle is completely dry inside.\nStep 3: Insert a string of 20-30 LED fairy lights into the bottle.\nStep 4: Arrange the cord so it exits the bottle mouth neatly.\nStep 5: Secure the battery pack discreetly near the bottle base or hide it.\nStep 6: Optionally, add decorative elements like sea glass or colored stones in the bottom.\nStep 7: Place in your desired location and adjust the light arrangement inside.\nStep 8: For an extra touch, wrap copper wire around the bottle neck as decoration.\nStep 9: Turn on the lights and enjoy your upcycled bottle lamp.",
+      tags: ["Glass Upcycle", "Lighting", "Home Decor", "Sustainable", "Bottle Craft", "Mood Lighting", "Gift Idea"],
+      imageKeywords: "glass+bottle+fairy+lights",
       difficultyLevel: 1,
-      timeRequired: 15
+      timeRequired: 20
     };
   }
   
-  // Newspaper/Magazine specific ideas
+  else if (itemNameLower.includes("cardboard") || itemNameLower.includes("box")) {
+    return {
+      titles: [
+        "Cardboard Roll-Top Desk Organizer",
+        "Multi-Compartment Shoe Storage System",
+        "Cardboard Cable Management Station",
+        "Cardboard Floating Wall Shelves",
+        "Cardboard Bedside Caddy",
+        "Honeycomb Modular Storage Unit",
+        "Cardboard Under-Bed Rolling Storage",
+        "Cardboard Drawer Divider System"
+      ],
+      suggestions: [
+        "Use packing tape to reinforce all folds and corners for durability",
+        "Apply several thin coats of acrylic paint instead of one thick coat to prevent warping",
+        "Add drawer pulls made from wine corks, wooden beads, or cabinet knobs",
+        "Create a template before cutting to ensure precise, matching pieces",
+        "Use wood glue rather than white glue for stronger bonds between cardboard pieces",
+        "Apply a clear polyurethane spray to seal and waterproof the finished product",
+        "Add caster wheels to the bottom of storage units for mobility",
+        "Line the inside with decorative paper or fabric for a finished look"
+      ],
+      instructions: "Step 1: Collect 6-8 same-sized cardboard boxes (shipping boxes work well).\nStep 2: Cut off the top and bottom flaps from each box.\nStep 3: Measure and mark 2-inch tabs along each open edge.\nStep 4: Score and fold these tabs inward.\nStep 5: Apply wood glue to the tabs and connect the boxes in a honeycomb pattern.\nStep 6: Reinforce all connections with packing tape on the inside.\nStep 7: Apply primer to the entire unit, then paint with your choice of colors.\nStep 8: Once dry, apply 2-3 coats of clear polyurethane spray for durability.\nStep 9: Mount to the wall using L-brackets, or leave freestanding.",
+      tags: ["Organization", "Home Storage", "Cardboard Furniture", "DIY", "Eco-friendly", "Modular", "Wall Mount"],
+      imageKeywords: "honeycomb+cardboard+shelf",
+      difficultyLevel: 4,
+      timeRequired: 120
+    };
+  }
+  
+  else if (itemNameLower.includes("t-shirt") || itemNameLower.includes("shirt") || itemNameLower.includes("textile")) {
+    return {
+      titles: [
+        "No-Sew T-shirt Market Bag",
+        "T-shirt Memory Quilt",
+        "Braided T-shirt Rug",
+        "T-shirt Yarn Plant Hanger",
+        "T-shirt Pillow Cover Set",
+        "T-shirt Produce Bags",
+        "Knotted T-shirt Wall Hanging",
+        "T-shirt Dog Toy Collection"
+      ],
+      suggestions: [
+        "Use sharp fabric scissors for clean cuts without stretching the material",
+        "For t-shirt yarn projects, cut shirts into continuous spirals to maximize length",
+        "Pre-wash all shirts before starting to prevent shrinkage later",
+        "Use iron-on interfacing on the back of special shirts for quilting to preserve prints",
+        "Tie tight square knots for no-sew projects to prevent unraveling",
+        "Use matching color threads when sewing to make seams less visible",
+        "Reinforce handles on bags with double stitching or extra layers",
+        "Spray light starch on completed fabric items for a crisper finish"
+      ],
+      instructions: "Step 1: Start with a clean, unwanted t-shirt.\nStep 2: Lay it flat and cut off the sleeves along the seams.\nStep 3: Cut out the neckline, making the opening wider - this will be the top of your bag.\nStep 4: Turn the shirt inside out.\nStep 5: Using fabric scissors, cut fringe strips along the bottom of the shirt, about 3-4 inches long and 1 inch wide.\nStep 6: Tie each fringe strip to the one next to it using double knots, working your way across the entire bottom.\nStep 7: Once all strips are tied, turn the shirt right-side out.\nStep 8: Trim any uneven edges or loose threads.\nStep 9: Your market bag is ready to use for groceries, gym clothes, or beach essentials.",
+      tags: ["No-Sew", "T-shirt Upcycle", "Shopping Bag", "Eco-friendly", "Zero Waste", "Textile Reuse", "Beginner Friendly"],
+      imageKeywords: "tshirt+tote+bag+upcycled",
+      difficultyLevel: 1,
+      timeRequired: 20
+    };
+  }
+  
+  else if (itemNameLower.includes("aluminum can") || itemNameLower.includes("tin can") || itemNameLower.includes("metal can")) {
+    return {
+      titles: [
+        "Aluminum Can Lantern Set",
+        "Tin Can Desk Organizer Caddy",
+        "Industrial Tin Can Lamp",
+        "Can Herb Garden Row Markers",
+        "Mini Can Succulent Planters",
+        "Can Wind Chimes Mobile",
+        "Aluminum Can Rose Garden Stakes",
+        "Upcycled Can Kitchen Utensil Holder"
+      ],
+      suggestions: [
+        "Use a nail and hammer to punch decorative patterns for light to shine through",
+        "File or sand all cut edges to prevent injuries",
+        "Apply a clear coat sealer to prevent rusting on outdoor projects",
+        "Remove paper labels with warm soapy water and baking soda paste",
+        "For planters, punch drainage holes in the bottom using a nail",
+        "Use spray paint designed for metal surfaces for best adhesion",
+        "When cutting cans, wear gloves to protect against sharp edges",
+        "Add a copper wire rim at the top of cans for a decorative finish"
+      ],
+      instructions: "Step 1: Begin with a clean, label-free large tin can (coffee cans work well).\nStep 2: Using a drill with a 1/8-inch metal bit, carefully drill a hole in the center of the bottom for the cord.\nStep 3: Mark and drill decorative patterns on the sides of the can using increasingly larger drill bits.\nStep 4: Sand any sharp edges to make them smooth and safe.\nStep 5: Clean out any metal shavings.\nStep 6: Spray paint the exterior with metallic or matte black spray paint designed for metal.\nStep 7: Insert a pendant light kit through the bottom hole, securing the socket inside the can.\nStep 8: Add an Edison bulb for the perfect industrial look.\nStep 9: Mount on a wooden base for stability, or attach chain or rope to create a hanging pendant.",
+      tags: ["Industrial", "Lighting", "Metal Upcycle", "Home Decor", "Rustic", "Functional", "Sustainable Design"],
+      imageKeywords: "tin+can+lamp+industrial",
+      difficultyLevel: 3,
+      timeRequired: 60
+    };
+  }
+  
+  else if (itemNameLower.includes("pallet") || itemNameLower.includes("wood")) {
+    return {
+      titles: [
+        "Pallet Vertical Herb Garden",
+        "Rustic Pallet Coffee Table with Storage",
+        "Pallet Outdoor Sofa with Cushions",
+        "Pallet Wall-Mounted Wine Rack",
+        "Pallet Wood Floating Shelves",
+        "Pallet Bed Frame with Under-Lighting",
+        "Pallet Outdoor Path Tiles",
+        "Pallet Wood Bathroom Organizer"
+      ],
+      suggestions: [
+        "Use a pry bar instead of a hammer to disassemble pallets with minimal wood damage",
+        "Sand all wood thoroughly to prevent splinters, starting with coarse and finishing with fine grit",
+        "Apply wood conditioner before staining for more even color absorption",
+        "Use a vinegar and steel wool solution for an instant weathered gray look",
+        "Check pallets for the HT stamp (heat-treated) which indicates safe, non-chemical treatment",
+        "Drill pilot holes to prevent wood from splitting when adding screws",
+        "Apply several coats of polyurethane for outdoor projects to protect against elements",
+        "Use wood glue in addition to screws for stronger joints"
+      ],
+      instructions: "Step 1: Start with two clean, heat-treated pallets (look for the HT stamp).\nStep 2: Sand all surfaces thoroughly, starting with 80-grit and working up to 220-grit sandpaper.\nStep 3: Apply wood conditioner, then stain in your choice of color.\nStep 4: Once dry, apply three coats of polyurethane, sanding lightly between coats.\nStep 5: Stack the pallets with the bottom one upside-down to create a storage compartment.\nStep 6: Secure together using 3-inch wood screws at each corner.\nStep 7: Add caster wheels to the bottom for mobility, screwing directly into the thicker support beams.\nStep 8: Cut a piece of plywood to size for the top surface, sand, stain, and seal to match.\nStep 9: Attach with screws from underneath and add wooden crates inside for optional storage.",
+      tags: ["Pallet Furniture", "Living Room", "Rustic", "Storage Solution", "Wood Upcycle", "DIY Furniture", "Sustainable"],
+      imageKeywords: "pallet+coffee+table+rustic",
+      difficultyLevel: 4,
+      timeRequired: 180
+    };
+  }
+  
+  else if (itemNameLower.includes("toilet paper roll") || itemNameLower.includes("paper tube")) {
+    return {
+      titles: [
+        "Toilet Paper Roll Seed Starter Pots",
+        "Cardboard Tube Desk Organizer",
+        "Decorative Wall Art from Paper Tubes",
+        "Toilet Paper Roll Fire Starters",
+        "Cardboard Roll Advent Calendar",
+        "Paper Tube Cable Organizers",
+        "Bathroom Wall Shelf from Tubes",
+        "Cardboard Tube Bird Feeder"
+      ],
+      suggestions: [
+        "Cut tubes into even ring sections for uniform pieces in artwork",
+        "Use modge podge or clear acrylic spray to seal cardboard and prevent warping",
+        "Group and glue tubes together to create strength through numbers",
+        "Paint tubes before assembly for easier coverage",
+        "When using for plants, make sure to cut slits at the bottom for drainage",
+        "For fire starters, dip in melted wax for longer burn time",
+        "Use a paper punch to create decorative patterns in tube sides",
+        "Flatten tubes and cut into strips for weaving projects"
+      ],
+      instructions: "Step 1: Collect 15-20 empty toilet paper rolls.\nStep 2: For each roll, make four 1-inch cuts on one end, spaced evenly around the circumference.\nStep 3: Fold these cut sections inward like closing a box, tucking the last flap under the first to secure the bottom.\nStep 4: Paint the exterior with non-toxic paint if desired, or leave natural.\nStep 5: Fill each pot with seed starting soil to about 3/4 full.\nStep 6: Plant your seeds according to package directions, usually 1/4 inch deep.\nStep 7: Water gently and place in a sunny window or under grow lights.\nStep 8: When seedlings are ready to transplant, plant the entire biodegradable pot in your garden.\nStep 9: Label each pot with a popsicle stick marker for easy identification.",
+      tags: ["Gardening", "Seed Starting", "Biodegradable", "Zero Waste", "Spring Project", "Cardboard Upcycle", "Kid-Friendly"],
+      imageKeywords: "toilet+paper+roll+seed+starters",
+      difficultyLevel: 1,
+      timeRequired: 30
+    };
+  }
+  
   else if (itemNameLower.includes("newspaper") || itemNameLower.includes("magazine")) {
     return {
       titles: [
-        "Newspaper Woven Basket",
-        "Magazine Page Beads Jewelry",
-        "Newspaper Seed Starter Pots",
-        "Magazine Collage Wall Art",
-        "Newspaper Paper Mache Bowl",
-        "Magazine Page Gift Bags",
-        "Newspaper Origami Decorations",
-        "Magazine Page Coasters"
+        "Newspaper Gift Basket with Handle",
+        "Magazine Page Coasters Set",
+        "Woven Magazine Page Placemat",
+        "Newspaper Seedling Pots",
+        "Rolled Magazine Photo Frame",
+        "Waterproof Newspaper Produce Bags",
+        "Magazine Page Beaded Necklace",
+        "Newspaper Wall Art Typography"
       ],
       suggestions: [
-        "Roll newspapers tightly to create strong 'dowels' for weaving projects",
-        "Look for colorful magazine pages for decorative projects",
-        "Seal paper projects with Mod Podge or clear acrylic spray for durability",
-        "For paper mache, tear paper into strips rather than cutting for better adhesion",
-        "Make your own paste with flour and water instead of buying commercial adhesive",
-        "Sort magazine pages by color for organized crafting",
-        "For seed starter pots, use black and white newspaper (colored inks may contain toxins)",
-        "Layer multiple pages for strength in structural projects"
+        "Roll newspaper or magazine pages tightly around a skewer for strong building elements",
+        "Seal finished paper crafts with clear acrylic spray for water resistance",
+        "Select magazine pages with complementary colors for more attractive finished items",
+        "Use a glue stick rather than liquid glue to prevent paper from wrinkling",
+        "Cut uniform strips using a paper cutter for more professional results",
+        "When weaving, alternate horizontal and vertical pieces for strength",
+        "Use a bone folder to create crisp folds without damaging paper",
+        "Apply mod podge between layers when laminating for a sturdy finish"
       ],
-      instructions: "To create Magazine Page Beads Jewelry: Cut long triangular strips from colorful magazine pages. Starting from the wide end, wrap the paper tightly around a skewer or toothpick. Apply a small amount of glue to the final corner to secure the bead. Slide the bead to the end of the skewer but don't remove it yet. Apply a coat of clear nail polish or Mod Podge to seal the bead. Allow to dry completely, then add a second coat for durability. Once fully dry, remove beads from skewers. String beads onto elastic cord, fishing line, or jewelry wire. Add clasps or knots to complete your bracelet or necklace.",
-      tags: ["Paper Craft", "Magazine Upcycle", "Jewelry Making", "Colorful", "Low Cost", "Eco-Friendly", "Handmade Gifts"],
-      imageKeywords: "magazine+paper+beads+jewelry",
+      instructions: "Step 1: Select 20-30 full-size colorful magazine pages.\nStep 2: Cut each page into long strips approximately 1/2 inch wide using a paper cutter.\nStep 3: Take one strip and tightly roll it from one end to the other, adding a small dot of glue at the end.\nStep 4: Continue rolling all your strips into tight coils.\nStep 5: Arrange 7 coils in a circular pattern, with one in the center and six surrounding it.\nStep 6: Use white glue to secure them together.\nStep 7: Continue adding concentric circles of coils until you reach your desired coaster size.\nStep 8: Coat both sides with three layers of mod podge, allowing drying time between coats.\nStep 9: Finish with a clear acrylic spray sealer for water resistance and create a set of 4-6 coasters.",
+      tags: ["Paper Craft", "Home Decor", "Upcycled", "Coasters", "Eco-friendly", "Colorful", "Magazine Reuse"],
+      imageKeywords: "magazine+coasters+recycled",
       difficultyLevel: 2,
-      timeRequired: 60
+      timeRequired: 90
     };
   }
   
   return defaultReturn;
 }
+
+export const searchRecyclingItems = async (query: string, materialType?: string): Promise<SearchResult | null> => {
+  try {
+    console.log("Searching for:", query, "Material type:", materialType);
+    
+    let itemsQuery = supabase
+      .from('items')
+      .select(`
+        id, 
+        name, 
+        description, 
+        material_type,
+        difficulty_level,
+        image_url,
+        ideas:items_ideas(
+          idea_id,
+          ideas:idea_id(
+            id,
+            title,
+            description,
+            instructions,
+            time_required,
+            difficulty_level,
+            cover_image_url,
+            tags:ideas_tags(
+              tags:tag_id(
+                name
+              )
+            )
+          )
+        )
+      `)
+      .ilike('name', `%${query}%`)
+      .limit(1);
+    
+    if (materialType) {
+      itemsQuery = itemsQuery.eq('material_type', materialType);
+    }
+    
+    const { data: exactMatches, error: exactError } = await itemsQuery;
+
+    if (exactError) {
+      console.error('Error fetching exact matches:', exactError);
+      return null;
+    }
+
+    console.log("Exact matches:", exactMatches);
+
+    const aiIdeasPromise = generateMultipleAiIdeas(query, materialType, 6);
+
+    if (exactMatches && exactMatches.length > 0) {
+      const item = exactMatches[0];
+      
+      let mainIdea = null;
+      const relatedIdeas = [];
+      
+      for (const matchedItem of exactMatches) {
+        if (matchedItem.ideas && Array.isArray(matchedItem.ideas)) {
+          for (const ideaRelation of matchedItem.ideas) {
+            if (ideaRelation.ideas && typeof ideaRelation.ideas === 'object') {
+              const idea = ideaRelation.ideas;
+              
+              if (idea && idea.id) {
+                const tags: string[] = [];
+                if (idea.tags && Array.isArray(idea.tags)) {
+                  idea.tags.forEach(tagRelation => {
+                    if (tagRelation.tags && typeof tagRelation.tags === 'object' && tagRelation.tags.name) {
+                      tags.push(tagRelation.tags.name);
+                    }
+                  });
+                }
+                
+                const processedIdea = {
+                  id: idea.id,
+                  title: idea.title,
+                  description: idea.description.split('\n').filter(Boolean),
+                  instructions: idea.instructions,
+                  timeRequired: idea.time_required,
+                  difficultyLevel: idea.difficulty_level,
+                  imageUrl: idea.cover_image_url,
+                  tags: tags.length > 0 ? tags : undefined
+                };
+                
+                if (!mainIdea) {
+                  mainIdea = processedIdea;
+                } else {
+                  if (!relatedIdeas.some(ri => ri.id === idea.id)) {
+                    relatedIdeas.push(processedIdea);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      const generatedAiIdeas = await aiIdeasPromise;
+      
+      if (mainIdea) {
+        const result: SearchResult = {
+          itemName: item.name,
+          materialType: item.material_type,
+          ideaTitle: mainIdea.title,
+          suggestions: mainIdea.description,
+          howTo: mainIdea.instructions,
+          isGeneric: false,
+          timeRequired: mainIdea.timeRequired,
+          difficultyLevel: mainIdea.difficultyLevel,
+          tags: mainIdea.tags,
+          imageUrl: mainIdea.imageUrl || item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
+          relatedIdeas: [
+            ...relatedIdeas,
+            ...generatedAiIdeas.map(aiIdea => ({
+              id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              title: aiIdea.ideaTitle || '',
+              description: aiIdea.suggestions,
+              instructions: aiIdea.howTo,
+              timeRequired: aiIdea.timeRequired || null,
+              difficultyLevel: aiIdea.difficultyLevel || null,
+              tags: aiIdea.tags,
+              imageUrl: aiIdea.imageUrl,
+              isAiGenerated: true
+            }))
+          ],
+          similarItems: exactMatches.map(match => ({
+            id: match.id,
+            name: match.name,
+            materialType: match.material_type
+          }))
+        };
+        
+        return result;
+      }
+      
+      const aiResults = await aiIdeasPromise;
+      
+      return {
+        itemName: item.name,
+        materialType: item.material_type,
+        ideaTitle: null,
+        suggestions: [
+          `Consider reusing this ${item.material_type} item for crafts or storage`,
+          "Check if your local recycling center accepts this material",
+          "Search online for specific upcycling ideas for this item"
+        ],
+        howTo: item.description || `This is a ${item.material_type} item that may be recyclable depending on your local facilities.`,
+        isGeneric: true,
+        difficultyLevel: item.difficulty_level,
+        imageUrl: item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
+        relatedIdeas: aiResults.map(aiIdea => ({
+          id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          title: aiIdea.ideaTitle || '',
+          description: aiIdea.suggestions,
+          instructions: aiIdea.howTo,
+          timeRequired: aiIdea.timeRequired || null,
+          difficultyLevel: aiIdea.difficultyLevel || null,
+          tags: aiIdea.tags,
+          imageUrl: aiIdea.imageUrl,
+          isAiGenerated: true
+        })),
+        similarItems: exactMatches.map(match => ({
+          id: match.id,
+          name: match.name,
+          materialType: match.material_type
+        }))
+      };
+    }
+
+    let similarQuery = supabase
+      .from('items')
+      .select(`
+        id, 
+        name, 
+        material_type,
+        difficulty_level,
+        image_url
+      `);
+    
+    if (materialType) {
+      similarQuery = similarQuery.eq('material_type', materialType);
+    } else {
+      similarQuery = similarQuery.ilike('material_type', `%${query}%`);
+    }
+    
+    const { data: similarMatches, error: similarError } = await similarQuery.limit(5);
+
+    if (similarError) {
+      console.error('Error fetching similar matches:', similarError);
+    }
+
+    console.log("Similar matches by material:", similarMatches);
+
+    const generatedIdeas = await aiIdeasPromise;
+
+    if (similarMatches && similarMatches.length > 0) {
+      return {
+        itemName: query,
+        materialType: similarMatches[0].material_type,
+        ideaTitle: null,
+        suggestions: [
+          `Check if your local recycling center accepts ${similarMatches[0].material_type}`,
+          "Consider donating if the item is still in good condition",
+          `Search online for DIY upcycling projects for ${similarMatches[0].material_type} items`,
+          "Look for specialized recycling programs in your area"
+        ],
+        howTo: `${similarMatches[0].material_type} materials can often be recycled, but may require special handling. Always follow your local recycling guidelines for proper disposal.`,
+        isGeneric: true,
+        imageUrl: similarMatches[0].image_url || `https://source.unsplash.com/random?${similarMatches[0].material_type.toLowerCase()},recycling`,
+        relatedIdeas: generatedIdeas.map(aiIdea => ({
+          id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          title: aiIdea.ideaTitle || '',
+          description: aiIdea.suggestions,
+          instructions: aiIdea.howTo,
+          timeRequired: aiIdea.timeRequired || null,
+          difficultyLevel: aiIdea.difficultyLevel || null,
+          tags: aiIdea.tags,
+          imageUrl: aiIdea.imageUrl,
+          isAiGenerated: true
+        })),
+        similarItems: [
+          {
+            id: similarMatches[0].id,
+            name: similarMatches[0].name,
+            materialType: similarMatches[0].material_type
+          }
+        ]
+      };
+    }
+
+    return {
+      itemName: query,
+      materialType: "Unknown",
+      ideaTitle: null,
+      suggestions: [
+        "Check if your local recycling center accepts this material",
+        "Consider donating if the item is still in good condition",
+        "Search online for DIY upcycling projects specific to your item",
+        "For electronics, look for e-waste recycling programs in your area"
+      ],
+      howTo: "Always check with your local recycling guidelines to ensure proper disposal of items that cannot be repurposed.",
+      isGeneric: true,
+      imageUrl: `https://source.unsplash.com/random?recycling,${query.toLowerCase()}`,
+      relatedIdeas: generatedIdeas.map(aiIdea => ({
+        id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        title: aiIdea.ideaTitle || '',
+        description: aiIdea.suggestions,
+        instructions: aiIdea.howTo,
+        timeRequired: aiIdea.timeRequired || null,
+        difficultyLevel: aiIdea.difficultyLevel || null,
+        tags: aiIdea.tags,
+        imageUrl: aiIdea.imageUrl,
+        isAiGenerated: true
+      }))
+    };
+  } catch (error) {
+    console.error('Error in searchRecyclingItems:', error);
+    return null;
+  }
+};
+
+const generateMultipleAiIdeas = async (
+  query: string, 
+  materialType?: string, 
+  count: number = 6
+): Promise<SearchResult[]> => {
+  try {
+    let material = materialType;
+    if (!material) {
+      const materialTypes = [
+        "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
+        "Organic", "Wood", "Cardboard", "Rubber", "Composite"
+      ];
+      
+      material = materialTypes.find(m => query.toLowerCase().includes(m.toLowerCase()));
+      
+      if (!material) {
+        material = materialTypes[Math.floor(Math.random() * materialTypes.length)];
+      }
+    }
+    
+    const promises: Promise<SearchResult | null>[] = [];
+    for (let i = 0; i < count; i++) {
+      promises.push(generateRecyclingIdea(query, material));
+    }
+    
+    const results = await Promise.all(promises);
+    const ideas: SearchResult[] = [];
+    
+    results.forEach(result => {
+      if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
+        ideas.push(result);
+      }
+    });
+    
+    const missingCount = count - ideas.length;
+    if (missingCount > 0) {
+      for (let i = 0; i < missingCount; i++) {
+        const result = await generateRecyclingIdea(query, material);
+        if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
+          ideas.push(result);
+        }
+      }
+    }
+    
+    return ideas.slice(0, count);
+  } catch (error) {
+    console.error('Error generating multiple AI ideas:', error);
+    return [];
+  }
+};
