@@ -37,12 +37,26 @@ const ResultCard: React.FC<ResultCardProps> = ({
   imageUrl,
   isAiGenerated = false
 }) => {
+  // Load images lazily to improve initial render time
+  const imageOptions = { loading: 'lazy' } as React.ImgHTMLAttributes<HTMLImageElement>;
+  
+  // Use lighter animations for better performance
+  const containerAnimation = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
+    transition: { duration: 0.3, ease: "easeOut" }
+  };
+  
+  const listItemAnimation = {
+    initial: { opacity: 0, x: -5 },
+    animate: { opacity: 1, x: 0 },
+    transition: { duration: 0.2 }
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      {...containerAnimation}
       className={cn(
         "w-full max-w-2xl mx-auto mt-8 overflow-hidden",
         "rounded-2xl border border-border bg-white shadow-sm",
@@ -57,6 +71,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
             src={imageUrl} 
             alt={ideaTitle || itemName} 
             className="w-full h-full object-cover"
+            {...imageOptions}
           />
         </div>
       )}
@@ -109,9 +124,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
           {suggestions.map((suggestion, index) => (
             <motion.li
               key={index}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
+              {...listItemAnimation}
+              transition={{ duration: 0.2, delay: index * 0.05 }}
               className="flex items-start"
             >
               <span className={`flex-shrink-0 w-6 h-6 rounded-full ${isAiGenerated ? 'bg-purple-100 text-purple-800' : 'bg-primary/10 text-primary'} flex items-center justify-center mt-0.5 mr-3`}>
@@ -124,9 +138,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
         {howTo && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.4 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
             className={`mt-6 p-4 rounded-xl ${isAiGenerated ? 'bg-purple-50 border border-purple-200' : 'bg-secondary border border-border'}`}
           >
             <div className="flex items-start">
@@ -153,4 +167,4 @@ const ResultCard: React.FC<ResultCardProps> = ({
   );
 };
 
-export default ResultCard;
+export default React.memo(ResultCard);

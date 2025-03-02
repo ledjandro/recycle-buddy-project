@@ -305,6 +305,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
   try {
     console.log("Searching for:", query, "Material type:", materialType);
     
+    // First, try to get exact matches from the database
     let itemsQuery = supabase
       .from('items')
       .select(`
@@ -348,7 +349,8 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
 
     console.log("Exact matches:", exactMatches);
 
-    const aiIdeas = await generateMultipleAiIdeas(query, materialType, 6);
+    // Generate AI ideas in a non-blocking way
+    const aiIdeasPromise = generateMultipleAiIdeas(query, materialType, 6);
 
     if (exactMatches && exactMatches.length > 0) {
       const item = exactMatches[0];
@@ -396,6 +398,9 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         }
       }
       
+      // Wait for AI ideas to complete
+      const aiIdeas = await aiIdeasPromise;
+      
       if (mainIdea) {
         const result: SearchResult = {
           itemName: item.name,
@@ -432,6 +437,8 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         return result;
       }
       
+      const aiIdeas = await aiIdeasPromise;
+      
       return {
         itemName: item.name,
         materialType: item.material_type,
@@ -464,6 +471,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
       };
     }
 
+    // Try to find similar items by material type
     let similarQuery = supabase
       .from('items')
       .select(`
@@ -487,6 +495,9 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
     }
 
     console.log("Similar matches by material:", similarMatches);
+
+    // Wait for AI ideas to complete
+    const aiIdeas = await aiIdeasPromise;
 
     if (similarMatches && similarMatches.length > 0) {
       return {
@@ -554,39 +565,58 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
   }
 };
 
+// Modified to be more efficient by generating ideas in parallel
 const generateMultipleAiIdeas = async (
   query: string, 
   materialType?: string, 
   count: number = 6
 ): Promise<SearchResult[]> => {
-  const ideas: SearchResult[] = [];
-  
-  let material = materialType;
-  if (!material) {
-    const materialTypes = [
-      "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
-      "Organic", "Wood", "Cardboard", "Rubber", "Composite"
-    ];
-    
-    material = materialTypes.find(m => query.toLowerCase().includes(m.toLowerCase()));
-    
+  try {
+    let material = materialType;
     if (!material) {
-      material = materialTypes[Math.floor(Math.random() * materialTypes.length)];
-    }
-  }
-  
-  for (let i = 0; i < count; i++) {
-    // Pass the query (item name) to the generator to create relevant ideas
-    const result = await generateRecyclingIdea(query, material);
-    
-    if (result) {
-      if (!ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
-        ideas.push(result);
-      } else {
-        i -= 1; // Try again if we got a duplicate title
+      const materialTypes = [
+        "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
+        "Organic", "Wood", "Cardboard", "Rubber", "Composite"
+      ];
+      
+      material = materialTypes.find(m => query.toLowerCase().includes(m.toLowerCase()));
+      
+      if (!material) {
+        material = materialTypes[Math.floor(Math.random() * materialTypes.length)];
       }
     }
+    
+    // Generate ideas in parallel instead of sequentially
+    const promises: Promise<SearchResult | null>[] = [];
+    for (let i = 0; i < count; i++) {
+      promises.push(generateRecyclingIdea(query, material));
+    }
+    
+    const results = await Promise.all(promises);
+    const ideas: SearchResult[] = [];
+    
+    // Filter out nulls and duplicates
+    results.forEach(result => {
+      if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
+        ideas.push(result);
+      }
+    });
+    
+    // If we don't have enough ideas due to duplicates or failures, make up the difference
+    const missingCount = count - ideas.length;
+    if (missingCount > 0) {
+      // Use a different approach for the remaining ideas to avoid more duplicates
+      for (let i = 0; i < missingCount; i++) {
+        const result = await generateRecyclingIdea(query, material);
+        if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
+          ideas.push(result);
+        }
+      }
+    }
+    
+    return ideas.slice(0, count);
+  } catch (error) {
+    console.error('Error generating multiple AI ideas:', error);
+    return [];
   }
-  
-  return ideas;
 };
