@@ -2,7 +2,9 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Info, Clock, BarChart2, Tag, Sparkles } from 'lucide-react';
+import { Info, Clock, BarChart2, Tag, Sparkles, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface ResultCardProps {
   itemName: string;
@@ -154,10 +156,46 @@ const ResultCard: React.FC<ResultCardProps> = ({
               <Info className={`w-5 h-5 ${isAiGenerated ? 'text-purple-800' : 'text-primary'} mt-0.5 mr-3 flex-shrink-0`} />
               <div>
                 <h4 className="font-medium text-foreground mb-1">How to do it:</h4>
-                <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
+                <p className="text-muted-foreground text-sm whitespace-pre-line line-clamp-6">{howTo}</p>
+                {howTo.length > 300 && !isDetailPage && (
+                  <div className="flex justify-center mt-2">
+                    <span className="text-xs text-muted-foreground">View full instructions in detail page</span>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
+        )}
+
+        {isDetailPage ? (
+          <div className="mt-6">
+            <Link to="/">
+              <Button variant="outline" className="w-full">
+                Back to Search
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-6">
+            <Link to={`/details/${encodeURIComponent(itemName)}`} state={{ 
+              itemName,
+              materialType,
+              ideaTitle,
+              suggestions,
+              howTo,
+              isGeneric,
+              timeRequired,
+              difficultyLevel,
+              tags,
+              imageUrl,
+              isAiGenerated
+            }}>
+              <Button variant={isAiGenerated ? "secondary" : "outline"} className="w-full group">
+                View Full Details
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
     </motion.div>
