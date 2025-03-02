@@ -1,4 +1,4 @@
-<lov-code>
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RecyclingIdea {
@@ -340,4 +340,99 @@ function generateRelevantInstructions(itemName: string, materialType: string, id
     }
     
     if (titleLower.includes("pillow")) {
-      return "Step 1: Select a t-shirt with a design you want to feature.\nStep 2: Turn the shirt inside out and pin around the design, creating a square or rectangle.\nStep 3: Sew along your pinned line, leaving one side open.\nStep 4: Cut around your stitching, leaving a 1/2 inch seam allowance.\nStep 5: Turn right-side out through the opening.\nStep 6: Fill with polyester fiberfill or a pillow insert.\nStep 7: Hand-stitch the opening closed using a
+      return "Step 1: Select a t-shirt with a design you want to feature.\nStep 2: Turn the shirt inside out and pin around the design, creating a square or rectangle.\nStep 3: Sew along your pinned line, leaving one side open.\nStep 4: Cut around your stitching, leaving a 1/2 inch seam allowance.\nStep 5: Turn right-side out through the opening.\nStep 6: Fill with polyester fiberfill or a pillow insert.\nStep 7: Hand-stitch the opening closed using a ladder stitch.\nStep 8: Add any additional decorative elements if desired.\nStep 9: Fluff and shape your pillow to distribute the filling evenly.";
+    }
+    
+    // General t-shirt project instructions if no specific match
+    return "Step 1: Wash and dry your t-shirt thoroughly before beginning.\nStep 2: Plan your design and create a paper pattern if needed.\nStep 3: Cut the shirt according to your pattern using sharp fabric scissors.\nStep 4: If sewing, pin pieces together before stitching.\nStep 5: Use an appropriate needle for knit fabrics if sewing by machine.\nStep 6: Reinforce seams that will receive stress or stretching.\nStep 7: Turn items right-side out if applicable and press seams.\nStep 8: Add any decorative elements or embellishments.\nStep 9: Give your creation a final press and trim any loose threads.";
+  }
+  
+  // Generic fallback instructions based on material type
+  const materialInstructions: Record<string, string> = {
+    "Plastic": "Step 1: Clean your plastic item thoroughly with soap and water.\nStep 2: Remove any labels or adhesive using oil or alcohol.\nStep 3: Draw your design or cutting lines with a permanent marker.\nStep 4: Carefully cut the plastic using appropriate scissors or tools.\nStep 5: Sand any rough edges to prevent injuries.\nStep 6: Apply plastic primer if you plan to paint the item.\nStep 7: Paint with plastic-specific paints in thin, even coats.\nStep 8: Allow adequate drying time between coats.\nStep 9: Apply a clear sealant to protect your finished project.",
+    
+    "Glass": "Step 1: Clean the glass thoroughly with vinegar and water solution.\nStep 2: Plan your design and mark any cutting lines with a non-permanent marker.\nStep 3: Protect your work surface and wear safety glasses if cutting glass.\nStep 4: Apply glass paint, frosting spray, or etching cream as desired.\nStep 5: Allow proper drying or setting time according to product instructions.\nStep 6: Apply additional coats or colors as needed for your design.\nStep 7: Heat-set painted designs according to paint manufacturer instructions.\nStep 8: Add any embellishments like beads, wire, or decorative elements.\nStep 9: Apply a protective clear coat if recommended for your materials.",
+    
+    "Metal": "Step 1: Clean the metal surface thoroughly to remove dirt and oils.\nStep 2: Remove any rust using vinegar solution or commercial rust remover.\nStep 3: Sand the surface to create better adhesion for paint or finishes.\nStep 4: Apply a metal primer and allow to dry completely.\nStep 5: Paint with metal-specific paint in thin, even coats.\nStep 6: Create any desired patterns, holes, or bends in the metal.\nStep 7: Add decorative elements like beads, wire, or other materials.\nStep 8: Seal with a clear protective coating appropriate for your project's use.\nStep 9: Attach any hardware needed for hanging or displaying your creation.",
+    
+    "Textile": "Step 1: Wash and dry the fabric to remove any sizing or dirt.\nStep 2: Iron the fabric to remove wrinkles for easier cutting.\nStep 3: Create or trace a pattern onto the fabric with fabric markers.\nStep 4: Cut the fabric precisely using sharp fabric scissors.\nStep 5: Pin pieces together if you'll be sewing multiple sections.\nStep 6: Sew the pieces together using appropriate thread and needle.\nStep 7: Turn the project right-side out if applicable and press seams.\nStep 8: Add any closures, decorative elements, or embellishments.\nStep 9: Give your creation a final press and trim any loose threads."
+  };
+  
+  return materialInstructions[materialType] || `Step 1: Clean the ${itemName} thoroughly before beginning.\nStep 2: Gather all necessary tools and materials for your project.\nStep 3: Measure and mark any cutting lines needed for your design.\nStep 4: Carefully cut or modify the item according to your plan.\nStep 5: Smooth any rough edges or surfaces as appropriate for the material.\nStep 6: Assemble the components of your ${ideaTitle}.\nStep 7: Secure parts together using appropriate adhesive or fasteners.\nStep 8: Apply paint, fabric, or decorative elements as desired.\nStep 9: Allow your project to dry completely before using.`;
+}
+
+function getItemSpecificIdeas(itemName: string, materialType: string) {
+  const itemNameLower = itemName.toLowerCase();
+  
+  const defaultReturn = {
+    titles: [],
+    suggestions: [],
+    instructions: "",
+    tags: [],
+    imageKeywords: "",
+    difficultyLevel: null,
+    timeRequired: null
+  };
+  
+  if (itemNameLower.includes("mason jar") || itemNameLower.includes("glass jar")) {
+    return {
+      titles: [
+        "Mason Jar Indoor Herb Garden",
+        "Mason Jar Hanging Wall Planter",
+        "Mason Jar Bathroom Organizer Set",
+        "Mason Jar Pendant Light",
+        "Mason Jar Kitchen Utensil Holder",
+        "Mason Jar Sewing Kit Organizer",
+        "Layered Sand Art Mason Jar",
+        "Mason Jar Terrarium Ecosystem"
+      ],
+      suggestions: [
+        "Remove the metal lid from the jar, but keep the rim for some projects",
+        "Spray paint the jar with frosted glass paint for a diffused light effect",
+        "For the pendant light, use a lamp cord kit with an E26 socket that fits inside the jar opening",
+        "Drill drainage holes in the bottom of the jar for plant-based projects using a diamond drill bit",
+        "Secure multiple jars to a wooden plank for a bathroom organizer or wall planter",
+        "Use copper wire to create hanging mechanisms for the jars",
+        "Line the inside with contact paper for a decorative effect",
+        "For kitchen organizers, group 3-4 jars together on a rotating base"
+      ],
+      instructions: "To create a Mason Jar Pendant Light: Start by thoroughly cleaning your mason jar and removing the lid (keep the rim). Using a hammer and nail, carefully punch a hole in the center of the lid. Thread your pendant light cord through this hole from inside the lid. Next, secure the socket to the lid following the kit instructions. Select a decorative Edison bulb that will fit inside the jar. Screw the rim back onto the jar with the light assembly. Finally, hang your new pendant light and adjust the cord length as needed. This makes an excellent light fixture for kitchen islands, dining areas, or bedside tables.",
+      tags: ["Mason Jar", "Kitchen", "Lighting", "Home Decor", "Upcycle", "Farmhouse Style", "Functional"],
+      imageKeywords: "mason+jar+pendant+light",
+      difficultyLevel: 3,
+      timeRequired: 45
+    };
+  }
+  
+  else if (itemNameLower.includes("plastic bottle")) {
+    return {
+      titles: [
+        "Plastic Bottle Self-Watering Planter",
+        "Plastic Bottle Bird Feeder Station",
+        "Plastic Bottle Desk Organizer",
+        "Plastic Bottle Wind Spinner",
+        "Plastic Bottle Herb Garden Tower",
+        "Plastic Bottle Drip Irrigation System",
+        "Plastic Bottle Smartphone Amplifier",
+        "Plastic Bottle Indoor Hydroponic Garden"
+      ],
+      suggestions: [
+        "Cut the bottle horizontally to create two sections - the top will be inverted into the bottom section",
+        "Use a heated nail to melt clean holes rather than cutting with scissors for cleaner results",
+        "Add a wick made from cotton rope to connect the water reservoir and soil",
+        "Paint with plastic-specific spray paint for better adhesion",
+        "Group multiple bottles together for larger projects",
+        "Add small rocks or marbles at the bottom for stability",
+        "Use UV-resistant paint for outdoor projects",
+        "Consider adding LED lights inside for illuminated night projects"
+      ],
+      instructions: "To create a Self-Watering Planter: Clean a plastic bottle thoroughly and remove labels. Cut the bottle horizontally about 1/3 from the bottom. Drill or punch 3-4 small drainage holes in the bottom section. Cut small notches around the top edge of the bottom section. Take the top section, remove the cap, and invert it into the bottom section. Thread a piece of cotton rope through the bottle neck to act as a wick. Fill the top section with potting soil, ensuring the wick extends into the soil. Plant your seeds or small plants. Fill the bottom reservoir with water and place in a sunny location. The wick will draw water up to the soil as needed.",
+      tags: ["Plastic Upcycle", "Gardening", "Self-Watering", "Indoor Plants", "Eco-Friendly", "Sustainable", "DIY"],
+      imageKeywords: "plastic+bottle+self+watering+planter",
+      difficultyLevel: 2,
+      timeRequired: 30
+    };
+  }
+  
+  return defaultReturn;
+}
