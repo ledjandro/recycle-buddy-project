@@ -30,7 +30,6 @@ export interface SearchResult {
   timeRequired?: number | null;
   difficultyLevel?: number | null;
   tags?: string[];
-  imageUrl?: string;
   similarItems?: {
     id: string;
     name: string;
@@ -44,7 +43,6 @@ export interface SearchResult {
     timeRequired: number | null;
     difficultyLevel: number | null;
     tags?: string[];
-    imageUrl?: string;
   }[];
 }
 
@@ -109,7 +107,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
             instructions,
             time_required,
             difficulty_level,
-            cover_image_url,
             tags:ideas_tags(
               tags:tag_id(
                 name
@@ -156,9 +153,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
                   });
                 }
                 
-                const imageUrl = idea.cover_image_url || 
-                  `https://images.unsplash.com/photo-${getRandomImageId(item.material_type, idea.title)}?w=600&q=80&fit=crop`;
-                
                 const processedIdea = {
                   id: idea.id,
                   title: idea.title,
@@ -166,7 +160,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
                   instructions: idea.instructions,
                   timeRequired: idea.time_required,
                   difficultyLevel: idea.difficulty_level,
-                  imageUrl: imageUrl,
                   tags: tags.length > 0 ? tags : undefined
                 };
                 
@@ -194,7 +187,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
           timeRequired: mainIdea.timeRequired,
           difficultyLevel: mainIdea.difficultyLevel,
           tags: mainIdea.tags,
-          imageUrl: mainIdea.imageUrl,
           relatedIdeas: relatedIdeas,
           similarItems: exactMatches.map(match => ({
             id: match.id,
@@ -203,8 +195,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
           }))
         };
       }
-      
-      const defaultImageUrl = `https://images.unsplash.com/photo-1500673922987-e212871fec22?w=600&q=80&fit=crop`;
       
       return {
         itemName: item.name,
@@ -218,7 +208,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         howTo: item.description || `This is a ${item.material_type} item that may be recyclable depending on your local facilities.`,
         isGeneric: true,
         difficultyLevel: item.difficulty_level,
-        imageUrl: defaultImageUrl,
         similarItems: exactMatches.map(match => ({
           id: match.id,
           name: match.name,
@@ -273,8 +262,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
       };
     }
 
-    const defaultImageUrl = `https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&q=80&fit=crop`;
-    
     return {
       itemName: query,
       materialType: "Unknown",
@@ -286,31 +273,10 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         "For electronics, look for e-waste recycling programs in your area"
       ],
       howTo: "Always check with your local recycling guidelines to ensure proper disposal of items that cannot be repurposed.",
-      isGeneric: true,
-      imageUrl: defaultImageUrl
+      isGeneric: true
     };
   } catch (error) {
     console.error('Error in searchRecyclingItems:', error);
     return null;
   }
 };
-
-function getRandomImageId(materialType: string, ideaTitle: string = ""): string {
-  const photoIds = [
-    "1485827404703-89b55fcc595e",
-    "1581091226825-a6a2a5aee158",
-    "1487058792275-0ad4aaf24ca7",
-    "1509316975850-ff9c5deb0cd9",
-    "1500673922987-e212871fec22",
-  ];
-  
-  const combinedString = (materialType + ideaTitle).toLowerCase();
-  let hash = 0;
-  for (let i = 0; i < combinedString.length; i++) {
-    hash = ((hash << 5) - hash) + combinedString.charCodeAt(i);
-    hash |= 0;
-  }
-  
-  const index = Math.abs(hash) % photoIds.length;
-  return photoIds[index];
-}
