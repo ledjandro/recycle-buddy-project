@@ -18,7 +18,7 @@ interface ResultCardProps {
   difficultyLevel?: number | null;
   tags?: string[];
   isDetailPage?: boolean;
-  imageUrl?: string;
+  imageUrl?: string;  // Keeping this optional
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, Navigate, useNavigate } from 'react-router-dom';
 import ResultCard from '@/components/ResultCard';
@@ -9,39 +8,52 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, Plus, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface IdeaItem {
+  title: string;
+  description: string[];
+  instructions: string;
+  timeRequired: number | null;
+  difficultyLevel: number | null;
+  tags: string[];
+  imageUrl?: string;
+  isMainIdea: boolean;
+}
+
 const IdeaDetail = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const ideaData = location.state as SearchResult | null;
   const [selectedTag, setSelectedTag] = useState<string>("all");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [allIdeas, setAllIdeas] = useState<any[]>([]);
+  const [allIdeas, setAllIdeas] = useState<IdeaItem[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const ideasPerPage = 3; // Number of ideas to show per page
   
   useEffect(() => {
-    // If no data was passed, this would be handled in the render
     if (!ideaData) return;
     
-    // Combine the main idea with related ideas into a single array
-    const mainIdea = {
-      title: ideaData.ideaTitle,
+    const mainIdea: IdeaItem = {
+      title: ideaData.ideaTitle || `Ideas for ${ideaData.itemName}`,
       description: ideaData.suggestions,
       instructions: ideaData.howTo,
-      timeRequired: ideaData.timeRequired,
-      difficultyLevel: ideaData.difficultyLevel,
+      timeRequired: ideaData.timeRequired || null,
+      difficultyLevel: ideaData.difficultyLevel || null,
       tags: ideaData.tags || [],
       imageUrl: ideaData.imageUrl,
       isMainIdea: true
     };
     
-    const combinedIdeas = [mainIdea];
+    const combinedIdeas: IdeaItem[] = [mainIdea];
     
     if (ideaData.relatedIdeas && ideaData.relatedIdeas.length > 0) {
-      // Add isMainIdea: false to each related idea
       const formattedRelatedIdeas = ideaData.relatedIdeas.map(idea => ({
-        ...idea,
+        title: idea.title,
+        description: idea.description,
+        instructions: idea.instructions,
+        timeRequired: idea.timeRequired,
+        difficultyLevel: idea.difficultyLevel,
         tags: idea.tags || [],
+        imageUrl: idea.imageUrl,
         isMainIdea: false
       }));
       
@@ -50,15 +62,12 @@ const IdeaDetail = () => {
     
     setAllIdeas(combinedIdeas);
     
-    // Collect all unique tags from all ideas
     const allTags = new Set<string>();
     
-    // Add tags from main idea
     if (ideaData.tags && ideaData.tags.length > 0) {
       ideaData.tags.forEach(tag => allTags.add(tag));
     }
     
-    // Add tags from related ideas
     if (ideaData.relatedIdeas && ideaData.relatedIdeas.length > 0) {
       ideaData.relatedIdeas.forEach(idea => {
         if (idea.tags && idea.tags.length > 0) {
@@ -70,24 +79,21 @@ const IdeaDetail = () => {
     setAvailableTags(Array.from(allTags));
   }, [ideaData]);
 
-  // If no data was passed, redirect back to home
   if (!ideaData) {
     return <Navigate to="/" replace />;
   }
 
   const handleTagSelect = (tag: string) => {
     setSelectedTag(tag);
-    setCurrentPage(0); // Reset to first page when changing filters
+    setCurrentPage(0);
   };
 
-  // Filter ideas based on the selected tag
   const filteredIdeas = selectedTag === "all" 
     ? allIdeas 
     : allIdeas.filter(idea => 
         idea.tags && idea.tags.includes(selectedTag)
       );
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredIdeas.length / ideasPerPage);
   const startIndex = currentPage * ideasPerPage;
   const visibleIdeas = filteredIdeas.slice(startIndex, startIndex + ideasPerPage);
@@ -187,7 +193,6 @@ const IdeaDetail = () => {
                 </motion.div>
               ))}
 
-              {/* Pagination controls */}
               {totalPages > 1 && (
                 <div className="flex justify-between items-center mt-6">
                   <Button 
