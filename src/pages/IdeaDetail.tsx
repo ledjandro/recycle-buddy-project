@@ -15,30 +15,37 @@ const IdeaDetail = () => {
   const ideaData = location.state as SearchResult | null;
   const [selectedTag, setSelectedTag] = useState<string>("all");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-  const [activeIdeaIndex, setActiveIdeaIndex] = useState<number>(0);
-  const [relatedIdeas, setRelatedIdeas] = useState<any[]>([]);
-  const [showMoreIdeas, setShowMoreIdeas] = useState<boolean>(false);
-
+  const [allIdeas, setAllIdeas] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const ideasPerPage = 3; // Number of ideas to show per page
+  
   useEffect(() => {
+    // If no data was passed, this would be handled in the render
+    if (!ideaData) return;
+    
     // Set available tags from the idea data
     if (ideaData && ideaData.tags && ideaData.tags.length > 0) {
       setAvailableTags(ideaData.tags);
     }
     
-    // Initialize filtered suggestions with all suggestions
-    if (ideaData) {
-      setFilteredSuggestions(ideaData.suggestions);
+    // Combine the main idea with related ideas into a single array
+    const mainIdea = {
+      title: ideaData.ideaTitle,
+      description: ideaData.suggestions,
+      instructions: ideaData.howTo,
+      timeRequired: ideaData.timeRequired,
+      difficultyLevel: ideaData.difficultyLevel,
+      tags: ideaData.tags,
+      isMainIdea: true
+    };
+    
+    const combinedIdeas = [mainIdea];
+    
+    if (ideaData.relatedIdeas && ideaData.relatedIdeas.length > 0) {
+      combinedIdeas.push(...ideaData.relatedIdeas);
     }
-
-    // Prepare related ideas array
-    if (ideaData && ideaData.relatedIdeas && ideaData.relatedIdeas.length > 0) {
-      setRelatedIdeas(ideaData.relatedIdeas);
-      setShowMoreIdeas(true);
-    } else {
-      setRelatedIdeas([]);
-      setShowMoreIdeas(false);
-    }
+    
+    setAllIdeas(combinedIdeas);
   }, [ideaData]);
 
   // If no data was passed, redirect back to home
@@ -48,35 +55,31 @@ const IdeaDetail = () => {
 
   const handleTagSelect = (tag: string) => {
     setSelectedTag(tag);
-    
-    // If no tag is selected (showing all), reset to all suggestions
-    if (tag === "all") {
-      setFilteredSuggestions(ideaData.suggestions);
-      return;
-    }
-    
-    // This is a placeholder for tag filtering logic
-    // In a real app, you would have tag-specific suggestions in your data model
-    const tagRelatedSuggestions = ideaData.suggestions.filter(
-      (_, index) => index % 2 === (tag === availableTags[0] ? 0 : 1)
-    );
-    
-    setFilteredSuggestions(tagRelatedSuggestions.length > 0 
-      ? tagRelatedSuggestions 
-      : ideaData.suggestions
-    );
+    setCurrentPage(0); // Reset to first page when changing filters
   };
 
-  const nextIdea = () => {
-    if (relatedIdeas.length > 0) {
-      setActiveIdeaIndex((prev) => (prev + 1) % relatedIdeas.length);
-    }
+  // Filter ideas based on the selected tag
+  const filteredIdeas = selectedTag === "all" 
+    ? allIdeas 
+    : allIdeas.filter(idea => 
+        idea.tags && idea.tags.includes(selectedTag)
+      );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredIdeas.length / ideasPerPage);
+  const startIndex = currentPage * ideasPerPage;
+  const visibleIdeas = filteredIdeas.slice(startIndex, startIndex + ideasPerPage);
+  
+  const nextPage = () => {
+    setCurrentPage(prev => (prev + 1) % totalPages);
   };
 
-  const prevIdea = () => {
-    if (relatedIdeas.length > 0) {
-      setActiveIdeaIndex((prev) => (prev - 1 + relatedIdeas.length) % relatedIdeas.length);
-    }
+  const prevPage = () => {
+    setCurrentPage(prev => (prev - 1 + totalPages) % totalPages);
+  };
+
+  const goToPage = (pageIndex: number) => {
+    setCurrentPage(pageIndex);
   };
 
   return (
@@ -96,8 +99,17 @@ const IdeaDetail = () => {
           </Button>
         </div>
 
-        {ideaData.tags && ideaData.tags.length > 0 && (
-          <div className="w-full max-w-2xl mx-auto mb-4">
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-center">
+            Recycling Ideas for {ideaData.itemName}
+          </h1>
+          <p className="text-muted-foreground text-center mt-2">
+            Material Type: {ideaData.materialType}
+          </p>
+        </div>
+
+        {availableTags.length > 0 && (
+          <div className="w-full max-w-2xl mx-auto mb-6">
             <label htmlFor="tag-filter" className="block text-sm font-medium text-foreground mb-2">
               Filter by Tag
             </label>
@@ -115,83 +127,87 @@ const IdeaDetail = () => {
           </div>
         )}
         
-        <ResultCard
-          itemName={ideaData.itemName}
-          materialType={ideaData.materialType}
-          ideaTitle={ideaData.ideaTitle}
-          suggestions={filteredSuggestions}
-          howTo={ideaData.howTo}
-          isGeneric={ideaData.isGeneric}
-          timeRequired={ideaData.timeRequired}
-          difficultyLevel={ideaData.difficultyLevel}
-          tags={ideaData.tags}
-          isDetailPage={true}
-        />
-
-        {showMoreIdeas && relatedIdeas.length > 0 && (
-          <div className="mt-8 w-full max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">More ideas for {ideaData.itemName}</h2>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={prevIdea}
-                  disabled={relatedIdeas.length <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={nextIdea}
-                  disabled={relatedIdeas.length <= 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeIdeaIndex}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
+        <div className="space-y-8">
+          {filteredIdeas.length === 0 ? (
+            <div className="text-center p-8 bg-muted rounded-lg">
+              <p className="text-lg font-medium">No ideas found for the selected filter.</p>
+              <Button 
+                variant="outline" 
+                onClick={() => setSelectedTag("all")} 
+                className="mt-4"
               >
-                <ResultCard
-                  itemName={ideaData.itemName}
-                  materialType={ideaData.materialType}
-                  ideaTitle={relatedIdeas[activeIdeaIndex].title}
-                  suggestions={relatedIdeas[activeIdeaIndex].description}
-                  howTo={relatedIdeas[activeIdeaIndex].instructions}
-                  isGeneric={false}
-                  timeRequired={relatedIdeas[activeIdeaIndex].timeRequired}
-                  difficultyLevel={relatedIdeas[activeIdeaIndex].difficultyLevel}
-                  tags={relatedIdeas[activeIdeaIndex].tags}
-                  isDetailPage={false}
-                  className="border-primary/30 shadow-md"
-                />
-              </motion.div>
-            </AnimatePresence>
-            
-            {relatedIdeas.length > 1 && (
-              <div className="flex justify-center mt-4">
-                {relatedIdeas.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-2 h-2 mx-1 rounded-full ${
-                      index === activeIdeaIndex ? 'bg-primary' : 'bg-muted'
-                    }`}
-                    onClick={() => setActiveIdeaIndex(index)}
-                    aria-label={`View idea ${index + 1}`}
+                Show All Ideas
+              </Button>
+            </div>
+          ) : (
+            <>
+              {visibleIdeas.map((idea, index) => (
+                <motion.div
+                  key={`${idea.title}-${index}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                >
+                  <ResultCard
+                    itemName={ideaData.itemName}
+                    materialType={ideaData.materialType}
+                    ideaTitle={idea.title}
+                    suggestions={Array.isArray(idea.description) ? idea.description : [idea.description]}
+                    howTo={idea.instructions}
+                    isGeneric={false}
+                    timeRequired={idea.timeRequired}
+                    difficultyLevel={idea.difficultyLevel}
+                    tags={idea.tags}
+                    isDetailPage={false}
+                    className={idea.isMainIdea ? "border-primary/50 shadow-md" : ""}
                   />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                </motion.div>
+              ))}
+
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-6">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={prevPage}
+                    disabled={totalPages <= 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  
+                  <div className="flex justify-center space-x-2">
+                    {Array.from({ length: totalPages }).map((_, index) => (
+                      <button
+                        key={index}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          index === currentPage 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted hover:bg-muted-foreground/20'
+                        }`}
+                        onClick={() => goToPage(index)}
+                        aria-label={`Go to page ${index + 1}`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={nextPage}
+                    disabled={totalPages <= 1}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
