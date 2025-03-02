@@ -15,7 +15,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
           <span className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary/20 rounded-full blur-lg animate-pulse-soft"></span>
         </div>
         <h1 className="text-3xl md:text-4xl font-light tracking-tight">
-          <span className="font-medium text-primary">Recycle</span> Buddy
+          <span className="font-medium text-primary">Recycl</span>it
         </h1>
       </div>
       <p className="text-muted-foreground max-w-md mx-auto text-balance mt-3 text-sm md:text-base">
