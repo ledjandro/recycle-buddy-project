@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RecyclingIdea {
@@ -86,6 +85,105 @@ export const getItemsByMaterialType = async (materialType: string): Promise<Recy
   } catch (error) {
     console.error('Error in getItemsByMaterialType:', error);
     return [];
+  }
+};
+
+export const searchRecyclingItems = async (query: string, materialType?: string): Promise<SearchResult | null> => {
+  try {
+    // Search for similar items
+    const { data: similarItems, error: searchError } = await supabase
+      .from('items')
+      .select('id, name, material_type')
+      .ilike('name', `%${query}%`)
+      .order('name');
+    
+    if (searchError) {
+      console.error('Error searching for items:', searchError);
+      return null;
+    }
+    
+    // Try to find exact match first
+    const { data: exactMatches, error: exactMatchError } = await supabase
+      .from('items')
+      .select('*')
+      .ilike('name', query)
+      .limit(1);
+    
+    if (exactMatchError) {
+      console.error('Error finding exact match:', exactMatchError);
+      return null;
+    }
+    
+    // If we have an exact match, get related recycling ideas
+    if (exactMatches && exactMatches.length > 0) {
+      const item = exactMatches[0];
+      
+      // Get recycling ideas related to this item
+      const { data: relatedIdeas, error: relatedIdeasError } = await supabase
+        .from('ideas')
+        .select('*')
+        .limit(5);
+      
+      if (relatedIdeasError) {
+        console.error('Error finding related ideas:', relatedIdeasError);
+      }
+      
+      const formattedIdeas = relatedIdeas ? relatedIdeas.map(idea => ({
+        id: idea.id,
+        title: idea.title,
+        description: idea.description.split('\n'),
+        instructions: idea.instructions,
+        timeRequired: idea.time_required,
+        difficultyLevel: idea.difficulty_level
+      })) : [];
+      
+      // Create a response with the exact match and related ideas
+      return {
+        itemName: item.name,
+        materialType: item.material_type,
+        ideaTitle: formattedIdeas.length > 0 ? formattedIdeas[0].title : null,
+        suggestions: [
+          'Clean and prepare the item',
+          'Gather necessary tools',
+          'Follow eco-friendly disposal guidelines'
+        ],
+        howTo: formattedIdeas.length > 0 ? formattedIdeas[0].instructions : 
+          'No specific instructions found. Consider general recycling guidelines.',
+        isGeneric: false,
+        timeRequired: formattedIdeas.length > 0 ? formattedIdeas[0].timeRequired : null,
+        difficultyLevel: item.difficulty_level,
+        imageUrl: item.image_url || undefined,
+        similarItems: similarItems?.map(item => ({
+          id: item.id,
+          name: item.name,
+          materialType: item.material_type
+        })),
+        relatedIdeas: formattedIdeas
+      };
+    }
+    
+    // No exact match, provide generic response
+    return {
+      itemName: query,
+      materialType: materialType || "Unknown",
+      ideaTitle: "General Recycling Tips",
+      suggestions: [
+        'Research local recycling guidelines',
+        'Clean items thoroughly before recycling',
+        'Separate different materials when possible',
+        'Consider upcycling options before recycling'
+      ],
+      howTo: "Check with your local recycling center for specific guidelines on recycling this item. Different regions have different capabilities and requirements for recycling various materials.",
+      isGeneric: true,
+      similarItems: similarItems?.map(item => ({
+        id: item.id,
+        name: item.name,
+        materialType: item.material_type
+      }))
+    };
+  } catch (error) {
+    console.error('Error in searchRecyclingItems:', error);
+    return null;
   }
 };
 
@@ -322,7 +420,7 @@ function generateRelevantInstructions(itemName: string, materialType: string, id
     }
     
     // General can project instructions if no specific match
-    return "Step 1: Clean the can thoroughly and remove any labels.\nStep 2: Sand the top rim to remove sharp edges.\nStep 3: Punch or drill holes as needed for your project.\nStep 4: Apply a metal primer to prevent rusting.\nStep 5: Paint with metal-appropriate paint in your chosen colors.\nStep 6: Allow paint to dry completely between coats.\nStep 7: Apply a protective clear coat, especially for outdoor projects.\nStep 8: Add any embellishments or attached parts to complete your design.\nStep 9: Allow all adhesives and finishes to cure completely before using.";
+    return "Step 1: Clean the can thoroughly and remove any labels.\nStep 2: Sand the top rim to remove sharp edges.\nStep 3: Punch or drill holes as needed for your project.\nStep 4: Apply a metal primer and allow to dry completely.\nStep 5: Paint with metal-specific paint in thin, even coats.\nStep 6: Create any desired patterns, holes, or bends in the metal.\nStep 7: Add decorative elements like beads, wire, or other materials.\nStep 8: Seal with a clear protective coating appropriate for your project's use.\nStep 9: Attach any hardware needed for hanging or displaying your creation.";
   }
   
   // T-shirt specific instructions
@@ -344,7 +442,7 @@ function generateRelevantInstructions(itemName: string, materialType: string, id
     }
     
     // General t-shirt project instructions if no specific match
-    return "Step 1: Wash and dry your t-shirt thoroughly before beginning.\nStep 2: Plan your design and create a paper pattern if needed.\nStep 3: Cut the shirt according to your pattern using sharp fabric scissors.\nStep 4: If sewing, pin pieces together before stitching.\nStep 5: Use an appropriate needle for knit fabrics if sewing by machine.\nStep 6: Reinforce seams that will receive stress or stretching.\nStep 7: Turn items right-side out if applicable and press seams.\nStep 8: Add any decorative elements or embellishments.\nStep 9: Give your creation a final press and trim any loose threads.";
+    return "Step 1: Wash and dry your t-shirt thoroughly before beginning.\nStep 2: Plan your design and create a paper pattern if needed.\nStep 3: Cut the shirt according to your pattern using sharp fabric scissors.\nStep 4: If sewing, pin pieces together before stitching.\nStep 5: Use an appropriate needle for knit fabrics if sewing by machine.\nStep 6: Reinforce seams that will receive stress or stretching.\nStep 7: Turn items right-side out if applicable and press seams.\nStep 8: Add any closures, decorative elements, or embellishments.\nStep 9: Give your creation a final press and trim any loose threads.";
   }
   
   // Generic fallback instructions based on material type
