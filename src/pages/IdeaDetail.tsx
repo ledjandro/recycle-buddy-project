@@ -23,11 +23,6 @@ const IdeaDetail = () => {
     // If no data was passed, this would be handled in the render
     if (!ideaData) return;
     
-    // Set available tags from the idea data
-    if (ideaData && ideaData.tags && ideaData.tags.length > 0) {
-      setAvailableTags(ideaData.tags);
-    }
-    
     // Combine the main idea with related ideas into a single array
     const mainIdea = {
       title: ideaData.ideaTitle,
@@ -53,6 +48,25 @@ const IdeaDetail = () => {
     }
     
     setAllIdeas(combinedIdeas);
+    
+    // Collect all unique tags from all ideas
+    const allTags = new Set<string>();
+    
+    // Add tags from main idea
+    if (ideaData.tags && ideaData.tags.length > 0) {
+      ideaData.tags.forEach(tag => allTags.add(tag));
+    }
+    
+    // Add tags from related ideas
+    if (ideaData.relatedIdeas && ideaData.relatedIdeas.length > 0) {
+      ideaData.relatedIdeas.forEach(idea => {
+        if (idea.tags && idea.tags.length > 0) {
+          idea.tags.forEach(tag => allTags.add(tag));
+        }
+      });
+    }
+    
+    setAvailableTags(Array.from(allTags));
   }, [ideaData]);
 
   // If no data was passed, redirect back to home
@@ -108,10 +122,10 @@ const IdeaDetail = () => {
 
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-center">
-            Recycling Ideas for {ideaData.itemName}
+            Recycling Ideas for {ideaData?.itemName}
           </h1>
           <p className="text-muted-foreground text-center mt-2">
-            Material Type: {ideaData.materialType}
+            Material Type: {ideaData?.materialType}
           </p>
         </div>
 
