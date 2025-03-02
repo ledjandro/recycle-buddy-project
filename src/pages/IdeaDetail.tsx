@@ -6,7 +6,8 @@ import AnimatedBackground from '@/components/AnimatedBackground';
 import { SearchResult } from '@/services/supabaseService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Plus, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const IdeaDetail = () => {
   const location = useLocation();
@@ -15,6 +16,9 @@ const IdeaDetail = () => {
   const [selectedTag, setSelectedTag] = useState<string>("all");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [activeIdeaIndex, setActiveIdeaIndex] = useState<number>(0);
+  const [relatedIdeas, setRelatedIdeas] = useState<any[]>([]);
+  const [showMoreIdeas, setShowMoreIdeas] = useState<boolean>(false);
 
   useEffect(() => {
     // Set available tags from the idea data
@@ -25,6 +29,15 @@ const IdeaDetail = () => {
     // Initialize filtered suggestions with all suggestions
     if (ideaData) {
       setFilteredSuggestions(ideaData.suggestions);
+    }
+
+    // Prepare related ideas array
+    if (ideaData && ideaData.relatedIdeas && ideaData.relatedIdeas.length > 0) {
+      setRelatedIdeas(ideaData.relatedIdeas);
+      setShowMoreIdeas(true);
+    } else {
+      setRelatedIdeas([]);
+      setShowMoreIdeas(false);
     }
   }, [ideaData]);
 
@@ -52,6 +65,18 @@ const IdeaDetail = () => {
       ? tagRelatedSuggestions 
       : ideaData.suggestions
     );
+  };
+
+  const nextIdea = () => {
+    if (relatedIdeas.length > 0) {
+      setActiveIdeaIndex((prev) => (prev + 1) % relatedIdeas.length);
+    }
+  };
+
+  const prevIdea = () => {
+    if (relatedIdeas.length > 0) {
+      setActiveIdeaIndex((prev) => (prev - 1 + relatedIdeas.length) % relatedIdeas.length);
+    }
   };
 
   return (
@@ -102,6 +127,71 @@ const IdeaDetail = () => {
           tags={ideaData.tags}
           isDetailPage={true}
         />
+
+        {showMoreIdeas && relatedIdeas.length > 0 && (
+          <div className="mt-8 w-full max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium">More ideas for {ideaData.itemName}</h2>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={prevIdea}
+                  disabled={relatedIdeas.length <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={nextIdea}
+                  disabled={relatedIdeas.length <= 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeIdeaIndex}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ResultCard
+                  itemName={ideaData.itemName}
+                  materialType={ideaData.materialType}
+                  ideaTitle={relatedIdeas[activeIdeaIndex].title}
+                  suggestions={relatedIdeas[activeIdeaIndex].description}
+                  howTo={relatedIdeas[activeIdeaIndex].instructions}
+                  isGeneric={false}
+                  timeRequired={relatedIdeas[activeIdeaIndex].timeRequired}
+                  difficultyLevel={relatedIdeas[activeIdeaIndex].difficultyLevel}
+                  tags={relatedIdeas[activeIdeaIndex].tags}
+                  isDetailPage={false}
+                  className="border-primary/30 shadow-md"
+                />
+              </motion.div>
+            </AnimatePresence>
+            
+            {relatedIdeas.length > 1 && (
+              <div className="flex justify-center mt-4">
+                {relatedIdeas.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2 h-2 mx-1 rounded-full ${
+                      index === activeIdeaIndex ? 'bg-primary' : 'bg-muted'
+                    }`}
+                    onClick={() => setActiveIdeaIndex(index)}
+                    aria-label={`View idea ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

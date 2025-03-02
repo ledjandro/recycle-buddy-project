@@ -35,6 +35,15 @@ export interface SearchResult {
     name: string;
     materialType: string;
   }[];
+  relatedIdeas?: {
+    id: string;
+    title: string;
+    description: string[];
+    instructions: string;
+    timeRequired: number | null;
+    difficultyLevel: number | null;
+    tags?: string[];
+  }[];
 }
 
 export const getMaterialTypes = async (): Promise<string[]> => {
@@ -49,7 +58,6 @@ export const getMaterialTypes = async (): Promise<string[]> => {
       return [];
     }
     
-    // Extract unique material types
     const uniqueTypes = [...new Set(data.map(item => item.material_type))];
     return uniqueTypes;
   } catch (error) {
@@ -82,7 +90,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
   try {
     console.log("Searching for:", query, "Material type:", materialType);
     
-    // Build query
     let itemsQuery = supabase
       .from('items')
       .select(`
@@ -111,7 +118,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
       .ilike('name', `%${query}%`)
       .limit(1);
     
-    // Add material type filter if provided
     if (materialType) {
       itemsQuery = itemsQuery.eq('material_type', materialType);
     }
@@ -125,53 +131,71 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
 
     console.log("Exact matches:", exactMatches);
 
-    // If we have an exact match, return the related recycling ideas
     if (exactMatches && exactMatches.length > 0) {
       const item = exactMatches[0];
       
-      // Check if there are any ideas associated with this item
-      if (item.ideas && Array.isArray(item.ideas) && item.ideas.length > 0) {
-        // Find the first idea with valid nested idea data
-        for (const ideaRelation of item.ideas) {
-          if (ideaRelation.ideas && typeof ideaRelation.ideas === 'object') {
-            const idea = ideaRelation.ideas;
-            console.log("Found idea:", idea);
-            
-            if (idea && idea.id) {
-              // Extract tags if available
-              const tags: string[] = [];
-              if (idea.tags && Array.isArray(idea.tags)) {
-                idea.tags.forEach(tagRelation => {
-                  if (tagRelation.tags && typeof tagRelation.tags === 'object' && tagRelation.tags.name) {
-                    tags.push(tagRelation.tags.name);
-                  }
-                });
-              }
+      let mainIdea = null;
+      const relatedIdeas = [];
+      
+      for (const matchedItem of exactMatches) {
+        if (matchedItem.ideas && Array.isArray(matchedItem.ideas)) {
+          for (const ideaRelation of matchedItem.ideas) {
+            if (ideaRelation.ideas && typeof ideaRelation.ideas === 'object') {
+              const idea = ideaRelation.ideas;
               
-              return {
-                itemName: item.name,
-                materialType: item.material_type,
-                ideaTitle: idea.title,
-                suggestions: idea.description.split('\n').filter(Boolean),
-                howTo: idea.instructions,
-                isGeneric: false,
-                timeRequired: idea.time_required,
-                difficultyLevel: idea.difficulty_level,
-                tags: tags.length > 0 ? tags : undefined,
-                similarItems: [
-                  {
-                    id: item.id,
-                    name: item.name,
-                    materialType: item.material_type
+              if (idea && idea.id) {
+                const tags: string[] = [];
+                if (idea.tags && Array.isArray(idea.tags)) {
+                  idea.tags.forEach(tagRelation => {
+                    if (tagRelation.tags && typeof tagRelation.tags === 'object' && tagRelation.tags.name) {
+                      tags.push(tagRelation.tags.name);
+                    }
+                  });
+                }
+                
+                const processedIdea = {
+                  id: idea.id,
+                  title: idea.title,
+                  description: idea.description.split('\n').filter(Boolean),
+                  instructions: idea.instructions,
+                  timeRequired: idea.time_required,
+                  difficultyLevel: idea.difficulty_level,
+                  tags: tags.length > 0 ? tags : undefined
+                };
+                
+                if (!mainIdea) {
+                  mainIdea = processedIdea;
+                } else {
+                  if (!relatedIdeas.some(ri => ri.id === idea.id)) {
+                    relatedIdeas.push(processedIdea);
                   }
-                ]
-              };
+                }
+              }
             }
           }
         }
       }
       
-      // If we found an item but no associated ideas, return item info with generic suggestions
+      if (mainIdea) {
+        return {
+          itemName: item.name,
+          materialType: item.material_type,
+          ideaTitle: mainIdea.title,
+          suggestions: mainIdea.description,
+          howTo: mainIdea.instructions,
+          isGeneric: false,
+          timeRequired: mainIdea.timeRequired,
+          difficultyLevel: mainIdea.difficultyLevel,
+          tags: mainIdea.tags,
+          relatedIdeas: relatedIdeas,
+          similarItems: exactMatches.map(match => ({
+            id: match.id,
+            name: match.name,
+            materialType: match.material_type
+          }))
+        };
+      }
+      
       return {
         itemName: item.name,
         materialType: item.material_type,
@@ -183,11 +207,15 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         ],
         howTo: item.description || `This is a ${item.material_type} item that may be recyclable depending on your local facilities.`,
         isGeneric: true,
-        difficultyLevel: item.difficulty_level
+        difficultyLevel: item.difficulty_level,
+        similarItems: exactMatches.map(match => ({
+          id: match.id,
+          name: match.name,
+          materialType: match.material_type
+        }))
       };
     }
 
-    // If no exact match, try to find a similar match by material type
     let similarQuery = supabase
       .from('items')
       .select(`
@@ -197,11 +225,9 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         difficulty_level
       `);
     
-    // If materialType is provided, use that for filtering
     if (materialType) {
       similarQuery = similarQuery.eq('material_type', materialType);
     } else {
-      // Otherwise try to match by material type in query
       similarQuery = similarQuery.ilike('material_type', `%${query}%`);
     }
     
@@ -213,7 +239,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
 
     console.log("Similar matches by material:", similarMatches);
 
-    // If we found similar matches by material, show generic suggestions
     if (similarMatches && similarMatches.length > 0) {
       return {
         itemName: query,
@@ -237,7 +262,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
       };
     }
 
-    // If no matches at all, return generic tips
     return {
       itemName: query,
       materialType: "Unknown",
