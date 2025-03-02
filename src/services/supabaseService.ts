@@ -97,7 +97,6 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     
     const materialType = material || materialTypes[Math.floor(Math.random() * materialTypes.length)];
     
-    // If no specific item name provided, use generic items for that material
     let itemToUse = itemName || "";
     if (!itemToUse) {
       const itemNames: Record<string, string[]> = {
@@ -118,10 +117,8 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
       itemToUse = items[Math.floor(Math.random() * items.length)];
     }
     
-    // Generate ideas specific to the item
     const ideaOptions = getItemSpecificIdeas(itemToUse, materialType);
     
-    // Select a random title from the available options or use a generic title pattern
     const ideaTitles = ideaOptions.titles.length > 0 
       ? ideaOptions.titles 
       : [
@@ -134,7 +131,6 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     
     const randomTitle = ideaTitles[Math.floor(Math.random() * ideaTitles.length)];
     
-    // Use item-specific suggestions or fallback to generic ones
     const suggestionPool = ideaOptions.suggestions.length > 0 
       ? ideaOptions.suggestions 
       : [
@@ -149,11 +145,9 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
           `Reinforce weak points with additional materials as needed`
         ];
     
-    // Shuffle and select 3-5 suggestions
     const shuffledSuggestions = [...suggestionPool].sort(() => 0.5 - Math.random());
     const selectedSuggestions = shuffledSuggestions.slice(0, Math.floor(Math.random() * 3) + 3);
     
-    // Use item-specific instructions or fallback to generic ones
     const instructions = ideaOptions.instructions || 
       [
         `Start by thoroughly cleaning the ${itemToUse}. Remove any labels, residue, or contents.`,
@@ -166,7 +160,6 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     const difficulty = Math.floor(Math.random() * 5) + 1;
     const time = (Math.floor(Math.random() * 6) + 1) * 15;
     
-    // Use item-specific tags or fallback to generic ones
     const possibleTags = ideaOptions.tags.length > 0 
       ? ideaOptions.tags 
       : ["DIY", "Upcycling", "Beginner", "Advanced", "Kids", "Home Decor", "Storage", "Garden", "Office", "Kitchen", "Crafts", "Functional", "Decorative", "Zero Waste", "Sustainable"];
@@ -174,7 +167,6 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     const shuffledTags = [...possibleTags].sort(() => 0.5 - Math.random());
     const selectedTags = shuffledTags.slice(0, Math.floor(Math.random() * 3) + 2);
     
-    // Create more specific image search keywords
     const imageCategory = ideaOptions.imageKeywords || itemToUse.toLowerCase();
     const imageUrl = `https://source.unsplash.com/random?${imageCategory},${materialType.toLowerCase()}`;
     
@@ -197,11 +189,9 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
   }
 };
 
-// Helper function to provide item-specific recycling ideas
 function getItemSpecificIdeas(itemName: string, materialType: string) {
   const itemNameLower = itemName.toLowerCase();
   
-  // Default return structure
   const defaultReturn = {
     titles: [],
     suggestions: [],
@@ -210,7 +200,6 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
     imageKeywords: ""
   };
   
-  // Mason Jar specific ideas
   if (itemNameLower.includes("mason jar") || itemNameLower.includes("glass jar")) {
     return {
       titles: [
@@ -241,7 +230,6 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
     };
   }
   
-  // Plastic Bottle specific ideas
   else if (itemNameLower.includes("plastic bottle")) {
     return {
       titles: [
@@ -268,7 +256,6 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
     };
   }
   
-  // Cardboard Box specific ideas
   else if (itemNameLower.includes("cardboard") || itemNameLower.includes("box")) {
     return {
       titles: [
@@ -295,9 +282,6 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
     };
   }
   
-  // Add more item-specific ideas as needed for common searches
-  
-  // If no specific match, return defaults which will trigger the generic responses
   return defaultReturn;
 }
 
@@ -305,7 +289,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
   try {
     console.log("Searching for:", query, "Material type:", materialType);
     
-    // First, try to get exact matches from the database
     let itemsQuery = supabase
       .from('items')
       .select(`
@@ -349,7 +332,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
 
     console.log("Exact matches:", exactMatches);
 
-    // Generate AI ideas in a non-blocking way
     const aiIdeasPromise = generateMultipleAiIdeas(query, materialType, 6);
 
     if (exactMatches && exactMatches.length > 0) {
@@ -398,8 +380,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         }
       }
       
-      // Wait for AI ideas to complete
-      const aiIdeas = await aiIdeasPromise;
+      const generatedAiIdeas = await aiIdeasPromise;
       
       if (mainIdea) {
         const result: SearchResult = {
@@ -415,7 +396,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
           imageUrl: mainIdea.imageUrl || item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
           relatedIdeas: [
             ...relatedIdeas,
-            ...aiIdeas.map(aiIdea => ({
+            ...generatedAiIdeas.map(aiIdea => ({
               id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
               title: aiIdea.ideaTitle || '',
               description: aiIdea.suggestions,
@@ -437,7 +418,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         return result;
       }
       
-      const aiIdeas = await aiIdeasPromise;
+      const aiResults = await aiIdeasPromise;
       
       return {
         itemName: item.name,
@@ -452,7 +433,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         isGeneric: true,
         difficultyLevel: item.difficulty_level,
         imageUrl: item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
-        relatedIdeas: aiIdeas.map(aiIdea => ({
+        relatedIdeas: aiResults.map(aiIdea => ({
           id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           title: aiIdea.ideaTitle || '',
           description: aiIdea.suggestions,
@@ -471,7 +452,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
       };
     }
 
-    // Try to find similar items by material type
     let similarQuery = supabase
       .from('items')
       .select(`
@@ -496,8 +476,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
 
     console.log("Similar matches by material:", similarMatches);
 
-    // Wait for AI ideas to complete
-    const aiIdeas = await aiIdeasPromise;
+    const generatedIdeas = await aiIdeasPromise;
 
     if (similarMatches && similarMatches.length > 0) {
       return {
@@ -513,7 +492,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         howTo: `${similarMatches[0].material_type} materials can often be recycled, but may require special handling. Always follow your local recycling guidelines for proper disposal.`,
         isGeneric: true,
         imageUrl: similarMatches[0].image_url || `https://source.unsplash.com/random?${similarMatches[0].material_type.toLowerCase()},recycling`,
-        relatedIdeas: aiIdeas.map(aiIdea => ({
+        relatedIdeas: generatedIdeas.map(aiIdea => ({
           id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           title: aiIdea.ideaTitle || '',
           description: aiIdea.suggestions,
@@ -547,7 +526,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
       howTo: "Always check with your local recycling guidelines to ensure proper disposal of items that cannot be repurposed.",
       isGeneric: true,
       imageUrl: `https://source.unsplash.com/random?recycling,${query.toLowerCase()}`,
-      relatedIdeas: aiIdeas.map(aiIdea => ({
+      relatedIdeas: generatedIdeas.map(aiIdea => ({
         id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         title: aiIdea.ideaTitle || '',
         description: aiIdea.suggestions,
@@ -565,7 +544,6 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
   }
 };
 
-// Modified to be more efficient by generating ideas in parallel
 const generateMultipleAiIdeas = async (
   query: string, 
   materialType?: string, 
@@ -586,7 +564,6 @@ const generateMultipleAiIdeas = async (
       }
     }
     
-    // Generate ideas in parallel instead of sequentially
     const promises: Promise<SearchResult | null>[] = [];
     for (let i = 0; i < count; i++) {
       promises.push(generateRecyclingIdea(query, material));
@@ -595,17 +572,14 @@ const generateMultipleAiIdeas = async (
     const results = await Promise.all(promises);
     const ideas: SearchResult[] = [];
     
-    // Filter out nulls and duplicates
     results.forEach(result => {
       if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
         ideas.push(result);
       }
     });
     
-    // If we don't have enough ideas due to duplicates or failures, make up the difference
     const missingCount = count - ideas.length;
     if (missingCount > 0) {
-      // Use a different approach for the remaining ideas to avoid more duplicates
       for (let i = 0; i < missingCount; i++) {
         const result = await generateRecyclingIdea(query, material);
         if (result && !ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
