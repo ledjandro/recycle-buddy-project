@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -11,10 +10,12 @@ import {
   SearchResult, 
   getMaterialTypes, 
   getItemsByMaterialType,
-  RecyclingItem 
+  RecyclingItem,
+  generateRecyclingIdea
 } from '@/services/supabaseService';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sparkles } from 'lucide-react';
 
 const Index = () => {
   const [materialTypes, setMaterialTypes] = useState<string[]>([]);
@@ -30,7 +31,6 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load material types when component mounts
     const loadMaterialTypes = async () => {
       try {
         const types = await getMaterialTypes();
@@ -44,7 +44,6 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    // Load items when material type changes
     const loadItemsByMaterialType = async () => {
       if (selectedMaterial === "all") {
         setMaterialItems([]);
@@ -64,23 +63,19 @@ const Index = () => {
     loadItemsByMaterialType();
   }, [selectedMaterial]);
 
-  // New effect to handle search suggestions as user types
   useEffect(() => {
     if (!searchQuery || searchQuery.length < 2) {
       setSearchSuggestions([]);
       return;
     }
     
-    // Clear any existing timeout
     if (typingTimeout) {
       clearTimeout(typingTimeout);
     }
     
-    // Set a new timeout to delay the search
     const timeout = setTimeout(async () => {
       setLoading(true);
       try {
-        // If material type is selected, use it in the search
         const materialFilter = selectedMaterial !== "all" ? selectedMaterial : undefined;
         const result = await searchRecyclingItems(searchQuery, materialFilter);
         
@@ -95,11 +90,10 @@ const Index = () => {
       } finally {
         setLoading(false);
       }
-    }, 300); // 300ms delay to avoid too frequent API calls
+    }, 300);
     
     setTypingTimeout(timeout);
     
-    // Clean up the timeout when the component unmounts or when searchQuery changes
     return () => {
       if (timeout) {
         clearTimeout(timeout);
@@ -113,12 +107,10 @@ const Index = () => {
     setLoading(true);
     
     try {
-      // If material type is selected, use it in the search
       const materialFilter = selectedMaterial !== "all" ? selectedMaterial : undefined;
       const result = await searchRecyclingItems(query, materialFilter);
       
       if (result) {
-        // Navigate to the detail page with the search result
         navigate(`/ideas/${encodeURIComponent(result.itemName)}`, { 
           state: result 
         });
@@ -131,7 +123,6 @@ const Index = () => {
           duration: 3000,
         });
       } else {
-        // Handle case where no result is returned
         toast({
           title: "Search error",
           description: "We couldn't process your search. Please try again.",
@@ -162,6 +153,44 @@ const Index = () => {
 
   const handleSearchInputChange = (value: string) => {
     setSearchQuery(value);
+  };
+
+  const handleGenerateRandomIdea = async () => {
+    setLoading(true);
+    
+    try {
+      const materialFilter = selectedMaterial !== "all" ? selectedMaterial : undefined;
+      const result = await generateRecyclingIdea(materialFilter);
+      
+      if (result) {
+        navigate(`/ideas/${encodeURIComponent(result.itemName)}`, { 
+          state: result 
+        });
+        
+        toast({
+          title: "AI-Generated Idea",
+          description: `Here's a creative recycling idea for ${result.itemName}.`,
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "Generation error",
+          description: "We couldn't generate an idea. Please try again.",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Idea generation error:", error);
+      toast({
+        title: "Generation error",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -196,7 +225,18 @@ const Index = () => {
               onInputChange={handleSearchInputChange}
             />
             
-            {/* Show search suggestions when typing */}
+            <div className="w-full max-w-2xl mx-auto flex justify-center">
+              <Button 
+                variant="outline" 
+                onClick={handleGenerateRandomIdea} 
+                disabled={loading}
+                className="group bg-white hover:bg-primary/10 border-dashed border-primary/40"
+              >
+                <Sparkles className="w-4 h-4 mr-2 text-purple-500 group-hover:animate-pulse" />
+                Generate Random Recycling Idea
+              </Button>
+            </div>
+            
             <AnimatePresence>
               {searchSuggestions.length > 0 && (
                 <motion.div 

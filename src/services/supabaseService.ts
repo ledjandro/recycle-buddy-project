@@ -86,6 +86,97 @@ export const getItemsByMaterialType = async (materialType: string): Promise<Recy
   }
 };
 
+export const generateRecyclingIdea = async (material?: string): Promise<SearchResult | null> => {
+  try {
+    const materialTypes = [
+      "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", "Organic", 
+      "Wood", "Cardboard", "Rubber", "Composite"
+    ];
+    
+    const materialType = material || materialTypes[Math.floor(Math.random() * materialTypes.length)];
+    
+    const itemNames: Record<string, string[]> = {
+      "Plastic": ["Plastic Bottle", "Plastic Container", "Plastic Bag", "Plastic Toy", "Plastic Utensil"],
+      "Paper": ["Newspaper", "Magazine", "Printer Paper", "Paper Bag", "Gift Wrap"],
+      "Glass": ["Glass Bottle", "Glass Jar", "Glass Container", "Broken Glass", "Glass Cup"],
+      "Metal": ["Aluminum Can", "Tin Can", "Metal Container", "Metal Lid", "Foil"],
+      "Textile": ["Old T-shirt", "Jeans", "Bedsheet", "Curtain", "Towel"],
+      "Electronic": ["Old Phone", "Computer Parts", "Cables", "Batteries", "Remote Controller"],
+      "Organic": ["Food Scraps", "Coffee Grounds", "Eggshells", "Fruit Peels", "Yard Waste"],
+      "Wood": ["Wood Scraps", "Pallet", "Wooden Furniture", "Wooden Toy", "Chopsticks"],
+      "Cardboard": ["Cardboard Box", "Cereal Box", "Toilet Paper Roll", "Egg Carton", "Cardboard Tube"],
+      "Rubber": ["Old Tire", "Rubber Band", "Flip Flops", "Rubber Gloves", "Rubber Mat"],
+      "Composite": ["Tetra Pak", "Coffee Cup", "Chip Bag", "Toothpaste Tube", "Disposable Diaper"]
+    };
+    
+    const items = itemNames[materialType] || ["Generic Item"];
+    const randomItem = items[Math.floor(Math.random() * items.length)];
+    
+    const ideaTitles = [
+      `Upcycled ${randomItem} Project`,
+      `Creative Reuse for ${randomItem}`,
+      `DIY ${randomItem} Transformation`,
+      `Sustainable Craft with ${randomItem}`,
+      `Eco-friendly ${randomItem} Makeover`
+    ];
+    
+    const randomTitle = ideaTitles[Math.floor(Math.random() * ideaTitles.length)];
+    
+    const suggestionTemplates = [
+      `Clean the ${randomItem} thoroughly before starting the project`,
+      `Cut the ${randomItem} into smaller pieces for easier handling`,
+      `Combine multiple ${randomItem}s for a larger project`,
+      `Add paint or decoration to personalize your creation`,
+      `Share your creation on social media to inspire others`,
+      `Consider using eco-friendly adhesives or fasteners for assembly`,
+      `Incorporate other recycled materials to enhance your project`,
+      `Use heat (if appropriate for the material) to reshape or modify`,
+      `Reinforce weak points with additional materials as needed`
+    ];
+    
+    const shuffledSuggestions = [...suggestionTemplates].sort(() => 0.5 - Math.random());
+    const selectedSuggestions = shuffledSuggestions.slice(0, Math.floor(Math.random() * 3) + 3);
+    
+    const instructions = [
+      `Start by thoroughly cleaning the ${randomItem}. Remove any labels, residue, or contents.`,
+      `Depending on your project, you might need to cut, shape, or modify the ${randomItem}.`,
+      `Assemble the parts according to your design, using appropriate adhesives or fasteners.`,
+      `Add finishing touches like paint, decoration, or functional elements.`,
+      `Let everything dry completely before using your new creation.`
+    ].join("\n\n");
+    
+    const difficulty = Math.floor(Math.random() * 5) + 1;
+    const time = (Math.floor(Math.random() * 6) + 1) * 15;
+    
+    const possibleTags = ["DIY", "Upcycling", "Beginner", "Advanced", "Kids", "Home Decor", "Storage", "Garden", "Office", "Kitchen", "Crafts", "Functional", "Decorative", "Zero Waste", "Sustainable"];
+    const shuffledTags = [...possibleTags].sort(() => 0.5 - Math.random());
+    const selectedTags = shuffledTags.slice(0, Math.floor(Math.random() * 3) + 2);
+    
+    const imageCategories = [
+      "upcycling", "recycling", "sustainable", "reuse", "craft", "diy", "eco"
+    ];
+    const randomCategory = imageCategories[Math.floor(Math.random() * imageCategories.length)];
+    const imageUrl = `https://source.unsplash.com/random?${randomCategory},${materialType.toLowerCase()}`;
+    
+    return {
+      itemName: randomItem,
+      materialType: materialType,
+      ideaTitle: randomTitle,
+      suggestions: selectedSuggestions,
+      howTo: instructions,
+      isGeneric: false,
+      timeRequired: time,
+      difficultyLevel: difficulty,
+      tags: selectedTags,
+      isAiGenerated: true,
+      imageUrl: imageUrl
+    };
+  } catch (error) {
+    console.error('Error generating recycling idea:', error);
+    return null;
+  }
+};
+
 export const searchRecyclingItems = async (query: string, materialType?: string): Promise<SearchResult | null> => {
   try {
     console.log("Searching for:", query, "Material type:", materialType);

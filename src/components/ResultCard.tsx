@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Info, Clock, BarChart2, Tag } from 'lucide-react';
+import { Info, Clock, BarChart2, Tag, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -18,6 +18,8 @@ interface ResultCardProps {
   difficultyLevel?: number | null;
   tags?: string[];
   isDetailPage?: boolean;
+  imageUrl?: string;
+  isAiGenerated?: boolean;
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({
@@ -31,7 +33,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
   timeRequired,
   difficultyLevel,
   tags,
-  isDetailPage = false
+  isDetailPage = false,
+  imageUrl,
+  isAiGenerated = false
 }) => {
   return (
     <motion.div
@@ -46,12 +50,30 @@ const ResultCard: React.FC<ResultCardProps> = ({
         className
       )}
     >
+      {imageUrl && (
+        <div className="w-full h-48 overflow-hidden">
+          <img 
+            src={imageUrl} 
+            alt={ideaTitle || itemName} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      
       <div className="p-6 md:p-8">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary mb-2">
-              {materialType}
-            </span>
+            <div className="flex gap-2 mb-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                {materialType}
+              </span>
+              {isAiGenerated && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  AI Generated
+                </span>
+              )}
+            </div>
             <h2 className="text-xl md:text-2xl font-medium text-foreground">
               {isGeneric 
                 ? `General Tips for "${itemName}"` 
