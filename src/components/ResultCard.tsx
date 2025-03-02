@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Info, Clock, BarChart2, Tag, Sparkles } from 'lucide-react';
+import { Info, Clock, BarChart2, Tag, Sparkles, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -66,11 +66,11 @@ const ResultCard: React.FC<ResultCardProps> = ({
       )}
     >
       {imageUrl && (
-        <div className="w-full h-48 overflow-hidden">
+        <div className="w-full h-56 overflow-hidden">
           <img 
             src={imageUrl} 
             alt={ideaTitle || itemName} 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform hover:scale-105"
             {...imageOptions}
           />
         </div>
@@ -79,7 +79,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
       <div className="p-6 md:p-8">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <div className="flex gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-2">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                 {materialType}
               </span>
@@ -90,7 +90,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 </span>
               )}
             </div>
-            <h2 className="text-xl md:text-2xl font-medium text-foreground">
+            <h2 className="text-xl md:text-2xl font-medium text-foreground line-clamp-2">
               {isGeneric 
                 ? `General Tips for "${itemName}"` 
                 : `${ideaTitle || `Recycling Ideas for ${itemName}`}`
@@ -114,14 +114,14 @@ const ResultCard: React.FC<ResultCardProps> = ({
             {tags && tags.length > 0 && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground bg-secondary px-2 py-1 rounded">
                 <Tag className="w-4 h-4" />
-                <span>{tags.join(', ')}</span>
+                <span className="line-clamp-1">{tags.join(', ')}</span>
               </div>
             )}
           </div>
         )}
 
         <ul className="mt-6 space-y-3">
-          {suggestions.map((suggestion, index) => (
+          {suggestions.slice(0, 4).map((suggestion, index) => (
             <motion.li
               key={index}
               {...listItemAnimation}
@@ -134,6 +134,15 @@ const ResultCard: React.FC<ResultCardProps> = ({
               <span className="text-foreground">{suggestion}</span>
             </motion.li>
           ))}
+          {suggestions.length > 4 && (
+            <motion.li
+              {...listItemAnimation}
+              transition={{ duration: 0.2, delay: 0.2 }}
+              className="flex items-center justify-center text-sm text-muted-foreground mt-1"
+            >
+              <span>and {suggestions.length - 4} more steps</span>
+            </motion.li>
+          )}
         </ul>
 
         {howTo && (
@@ -147,17 +156,43 @@ const ResultCard: React.FC<ResultCardProps> = ({
               <Info className={`w-5 h-5 ${isAiGenerated ? 'text-purple-800' : 'text-primary'} mt-0.5 mr-3 flex-shrink-0`} />
               <div>
                 <h4 className="font-medium text-foreground mb-1">How to do it:</h4>
-                <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
+                <p className="text-muted-foreground text-sm whitespace-pre-line line-clamp-6">{howTo}</p>
+                {howTo.length > 300 && !isDetailPage && (
+                  <div className="flex justify-center mt-2">
+                    <span className="text-xs text-muted-foreground">View full instructions in detail page</span>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
         )}
 
-        {isDetailPage && (
+        {isDetailPage ? (
           <div className="mt-6">
             <Link to="/">
               <Button variant="outline" className="w-full">
                 Back to Search
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-6">
+            <Link to={`/details/${encodeURIComponent(itemName)}`} state={{ 
+              itemName,
+              materialType,
+              ideaTitle,
+              suggestions,
+              howTo,
+              isGeneric,
+              timeRequired,
+              difficultyLevel,
+              tags,
+              imageUrl,
+              isAiGenerated
+            }}>
+              <Button variant={isAiGenerated ? "secondary" : "outline"} className="w-full group">
+                View Full Details
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </div>
