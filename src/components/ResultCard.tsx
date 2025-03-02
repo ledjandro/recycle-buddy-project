@@ -156,7 +156,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
               <Info className={`w-5 h-5 ${isAiGenerated ? 'text-purple-800' : 'text-primary'} mt-0.5 mr-3 flex-shrink-0`} />
               <div>
                 <h4 className="font-medium text-foreground mb-1">How to do it:</h4>
-                <p className="text-muted-foreground text-sm whitespace-pre-line line-clamp-6">{howTo}</p>
+                <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
               </div>
             </div>
           </motion.div>
