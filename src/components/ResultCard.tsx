@@ -54,6 +54,10 @@ const ResultCard: React.FC<ResultCardProps> = ({
     transition: { duration: 0.2 }
   };
 
+  // Parse howTo steps if they're in a Step 1: format
+  const howToSteps = howTo.split(/\n+/).filter(step => step.trim());
+  const hasFormattedSteps = howToSteps.length > 0 && howToSteps[0].match(/^Step \d+:/);
+
   return (
     <motion.div
       {...containerAnimation}
@@ -155,8 +159,28 @@ const ResultCard: React.FC<ResultCardProps> = ({
             <div className="flex items-start">
               <Info className={`w-5 h-5 ${isAiGenerated ? 'text-purple-800' : 'text-primary'} mt-0.5 mr-3 flex-shrink-0`} />
               <div>
-                <h4 className="font-medium text-foreground mb-1">How to do it:</h4>
-                <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
+                <h4 className="font-medium text-foreground mb-2">How to do it:</h4>
+                {hasFormattedSteps ? (
+                  <ul className="space-y-2">
+                    {howToSteps.map((step, index) => {
+                      const stepMatch = step.match(/^Step (\d+):(.*)/);
+                      if (stepMatch) {
+                        const [, number, content] = stepMatch;
+                        return (
+                          <li key={index} className="flex items-start">
+                            <span className={`flex-shrink-0 w-6 h-6 rounded-full ${isAiGenerated ? 'bg-purple-100 text-purple-800' : 'bg-primary/10 text-primary'} flex items-center justify-center mt-0.5 mr-3`}>
+                              {number}
+                            </span>
+                            <span className="text-muted-foreground text-sm">{content.trim()}</span>
+                          </li>
+                        );
+                      }
+                      return null;
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground text-sm whitespace-pre-line">{howTo}</p>
+                )}
               </div>
             </div>
           </motion.div>

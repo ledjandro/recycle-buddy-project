@@ -118,9 +118,10 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
       itemToUse = items[Math.floor(Math.random() * items.length)];
     }
     
+    // Generate ideas specifically for this item
     const ideaOptions = getItemSpecificIdeas(itemToUse, materialType);
     
-    // Use a specific title from the options or generate a fallback
+    // Use a specific title from the options or generate a relevant fallback
     const ideaTitles = ideaOptions.titles.length > 0 
       ? ideaOptions.titles 
       : [
@@ -137,30 +138,28 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
     const suggestionPool = ideaOptions.suggestions.length > 0 
       ? ideaOptions.suggestions 
       : [
-          `Cut the ${itemToUse} to create the frame for your project`,
-          `Reinforce weak points with hot glue or strong tape`,
-          `Add holes for drainage if making a planter`,
+          `Clean the ${itemToUse} thoroughly before starting`,
+          `Measure and mark cutting lines for your ${randomTitle.toLowerCase()}`,
+          `Carefully cut the ${itemToUse} using appropriate tools for ${materialType.toLowerCase()}`,
           `Sand rough edges to prevent injuries`,
-          `Apply a coat of primer before painting for better adhesion`,
-          `Use weatherproof sealant for outdoor projects`,
+          `Apply a primer suitable for ${materialType.toLowerCase()} before painting`,
+          `Use a weatherproof sealant for outdoor projects`,
           `Add rubber feet to the bottom to prevent scratching surfaces`,
-          `Install LED strip lights for illuminated projects`,
-          `Add hinges to create doors or lids that open and close`
+          `Install LED lights for illuminated projects`,
+          `Add decorative elements that complement your ${randomTitle.toLowerCase()}`
         ];
     
     // Select a subset of the suggestions
     const shuffledSuggestions = [...suggestionPool].sort(() => 0.5 - Math.random());
     const selectedSuggestions = shuffledSuggestions.slice(0, Math.floor(Math.random() * 3) + 3);
     
-    // Use specific instructions or fallback
-    const instructions = ideaOptions.instructions || 
-      `Step 1: Clean the ${itemToUse} thoroughly and remove any labels or residue.\n\n` +
-      `Step 2: Mark your cutting lines with a permanent marker and carefully cut the ${itemToUse} according to your design plan.\n\n` +
-      `Step 3: Sand any rough edges to make them smooth and safe to handle.\n\n` +
-      `Step 4: If your project requires it, drill holes for drainage, hanging, or attaching components.\n\n` +
-      `Step 5: Apply primer and then paint with colors of your choice, or cover with decorative paper or fabric.\n\n` +
-      `Step 6: Allow everything to dry completely before using your new creation.\n\n` +
-      `Step 7: Add any final details like handles, labels, or decorative elements.`;
+    // Generate specific instructions based on the chosen title and item
+    let instructions = ideaOptions.instructions;
+    
+    // If no specific instructions, generate based on the selected title
+    if (!instructions) {
+      instructions = generateSpecificInstructions(itemToUse, materialType, randomTitle);
+    }
     
     // Set reasonable difficulty and time values
     const difficulty = ideaOptions.difficultyLevel || Math.floor(Math.random() * 5) + 1;
@@ -197,6 +196,39 @@ export const generateRecyclingIdea = async (itemName?: string, material?: string
   }
 };
 
+// Helper function to generate specific instructions based on the selected title
+function generateSpecificInstructions(itemName: string, materialType: string, ideaTitle: string): string {
+  const titleLower = ideaTitle.toLowerCase();
+  
+  // For lamp projects
+  if (titleLower.includes("lamp") || titleLower.includes("light") || titleLower.includes("lantern")) {
+    return `Step 1: Clean ${itemName} thoroughly and remove any labels.\nStep 2: Mark where you'll cut to create the lamp shape.\nStep 3: Carefully cut the ${itemName} using tools appropriate for ${materialType}.\nStep 4: Sand any rough edges for safety.\nStep 5: Drill a hole for the cord if needed.\nStep 6: Install a socket kit with cord according to manufacturer's instructions.\nStep 7: Add decorative elements to the exterior of your lamp.\nStep 8: Install an appropriate bulb for your lamp size.\nStep 9: Test the lamp to ensure it works properly and safely.`;
+  }
+  
+  // For planter projects
+  if (titleLower.includes("planter") || titleLower.includes("garden") || titleLower.includes("pot")) {
+    return `Step 1: Clean ${itemName} thoroughly.\nStep 2: Drill or punch drainage holes in the bottom.\nStep 3: Add a layer of gravel or pebbles at the bottom for drainage.\nStep 4: Decorate the exterior with paint suitable for ${materialType}.\nStep 5: Allow paint to dry completely.\nStep 6: Add potting soil leaving room at the top.\nStep 7: Plant your chosen seeds or small plants.\nStep 8: Water lightly and place in appropriate sunlight.\nStep 9: Check soil moisture regularly and maintain as needed.`;
+  }
+  
+  // For storage/organizer projects
+  if (titleLower.includes("storage") || titleLower.includes("organizer") || titleLower.includes("holder") || titleLower.includes("container")) {
+    return `Step 1: Clean ${itemName} thoroughly and remove any labels.\nStep 2: Mark where you'll cut or modify the ${itemName}.\nStep 3: Cut or shape as needed for your organizer design.\nStep 4: Sand any rough edges for safety.\nStep 5: Create dividers if needed for organization.\nStep 6: Paint or decorate the exterior to match your décor.\nStep 7: Add labels if needed for easy identification.\nStep 8: Apply a protective clear coat for durability.\nStep 9: Install in your desired location and fill with items.`;
+  }
+  
+  // For wall décor projects
+  if (titleLower.includes("wall") || titleLower.includes("art") || titleLower.includes("décor") || titleLower.includes("decor") || titleLower.includes("frame")) {
+    return `Step 1: Clean ${itemName} thoroughly.\nStep 2: Sketch your design on paper first.\nStep 3: Mark cutting or assembly lines on the ${itemName}.\nStep 4: Cut or shape as needed using appropriate tools.\nStep 5: Sand rough edges for safety and appearance.\nStep 6: Paint or decorate according to your design plan.\nStep 7: Add hanging hardware to the back.\nStep 8: Apply a protective clear coat if needed.\nStep 9: Hang securely on your wall at the desired height.`;
+  }
+  
+  // For furniture projects
+  if (titleLower.includes("table") || titleLower.includes("chair") || titleLower.includes("bench") || titleLower.includes("stool") || titleLower.includes("furniture")) {
+    return `Step 1: Clean ${itemName} thoroughly.\nStep 2: Create a design plan with measurements.\nStep 3: Cut or shape the ${itemName} as needed.\nStep 4: Sand all surfaces thoroughly for safety.\nStep 5: Join pieces together using appropriate fasteners or adhesives.\nStep 6: Reinforce joints for stability.\nStep 7: Apply paint, stain, or sealant suitable for ${materialType}.\nStep 8: Allow to dry completely between coats.\nStep 9: Add any finishing touches like felt pads on the bottom.`;
+  }
+  
+  // Default instructions if none of the above categories match
+  return `Step 1: Clean ${itemName} thoroughly before starting.\nStep 2: Sketch your design for the ${ideaTitle} on paper.\nStep 3: Gather all necessary tools and materials.\nStep 4: Mark any cutting lines on the ${itemName}.\nStep 5: Carefully cut or modify the ${itemName} according to your design.\nStep 6: Sand any rough edges for safety and appearance.\nStep 7: Paint or decorate as desired with materials suitable for ${materialType}.\nStep 8: Allow to dry completely.\nStep 9: Add any final details or functional elements to complete your project.`;
+}
+
 function getItemSpecificIdeas(itemName: string, materialType: string) {
   const itemNameLower = itemName.toLowerCase();
   
@@ -232,7 +264,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "Line the inside with contact paper for a decorative effect",
         "For kitchen organizers, group 3-4 jars together on a rotating base"
       ],
-      instructions: "To create a Mason Jar Pendant Light: Start by thoroughly cleaning your mason jar and removing the lid (keep the rim). Using a hammer and nail, carefully punch a hole in the center of the lid. Thread your pendant light cord through this hole from inside the lid. Next, secure the socket to the lid following the kit instructions. Select a decorative Edison bulb that will fit inside the jar. Screw the rim back onto the jar with the light assembly. Finally, hang your new pendant light and adjust the cord length as needed. This makes an excellent light fixture for kitchen islands, dining areas, or bedside tables.",
+      instructions: "Step 1: Thoroughly clean your mason jar and remove the lid (keep the rim).\nStep 2: Using a hammer and nail, carefully punch a hole in the center of the lid.\nStep 3: Thread your pendant light cord through this hole from inside the lid.\nStep 4: Secure the socket to the lid following the kit instructions.\nStep 5: Select a decorative Edison bulb that will fit inside the jar.\nStep 6: Screw the rim back onto the jar with the light assembly.\nStep 7: Test the light to ensure it works properly.\nStep 8: Hang your new pendant light using secure mounting hardware.\nStep 9: Adjust the cord length as needed for your space.",
       tags: ["Mason Jar", "Kitchen", "Lighting", "Home Decor", "Upcycle", "Farmhouse Style", "Functional"],
       imageKeywords: "mason+jar+pendant+light",
       difficultyLevel: 3,
@@ -262,11 +294,41 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "For the hydroponic system, create holes for net pots in the bottle sides",
         "For the organizer, cut bottles at varying heights to hold different items"
       ],
-      instructions: "To make a Self-Watering Planter: Take a clean plastic bottle and cut it horizontally about 1/3 from the bottom. This bottom section will be your water reservoir. Take the top section and invert it so the bottle neck points downward. Insert a piece of cotton rope or strip of fabric through the bottle neck to serve as a wick. Fill the inverted top section with potting soil, ensuring the wick extends up into the soil. Plant your seedling or seeds in the soil. Fill the bottom reservoir with water. Place the soil-filled top section into the bottom reservoir, with the wick extending into the water. As the soil dries out, it will draw water up through the wick, keeping your plants perfectly watered for days.",
+      instructions: "Step 1: Take a clean plastic bottle and cut it horizontally about 1/3 from the bottom.\nStep 2: This bottom section will be your water reservoir.\nStep 3: Take the top section and invert it so the bottle neck points downward.\nStep 4: Insert a piece of cotton rope through the bottle neck to serve as a wick.\nStep 5: Fill the inverted top section with potting soil, ensuring the wick extends up into the soil.\nStep 6: Plant your seedling or seeds in the soil.\nStep 7: Fill the bottom reservoir with water.\nStep 8: Place the soil-filled top section into the bottom reservoir, with the wick extending into the water.\nStep 9: As the soil dries out, it will draw water up through the wick, keeping your plants watered for days.",
       tags: ["Gardening", "Self-Watering", "Indoor Plants", "Plastic Upcycle", "Sustainable", "Hydroponic", "Zero Waste"],
       imageKeywords: "plastic+bottle+self+watering+planter",
       difficultyLevel: 2,
       timeRequired: 30
+    };
+  }
+  
+  else if (itemNameLower.includes("glass bottle")) {
+    return {
+      titles: [
+        "Glass Bottle Tiki Torch",
+        "Bottle Fairy Light Lamp",
+        "Wine Bottle Herb Garden",
+        "Glass Bottle Soap Dispenser",
+        "Bottle Terrarium Garden",
+        "Layered Sand Art Bottle",
+        "Glass Bottle Bird Feeder",
+        "Bottle Hanging Planter"
+      ],
+      suggestions: [
+        "Use a bottle cutting kit to cleanly cut glass bottles for certain projects",
+        "Add copper or LED string lights inside bottles for beautiful lighting effects",
+        "For outdoor projects, use weather-resistant materials and sealants",
+        "Consider etching designs onto the glass surface with etching cream",
+        "Use wine bottles with interesting shapes or colors for more decorative projects",
+        "Add a pour spout for bottles repurposed as oil or soap dispensers",
+        "For terrariums, layer activated charcoal, soil, and decorative stones",
+        "Use a glass drill bit with water to safely drill drainage holes"
+      ],
+      instructions: "Step 1: Clean your glass bottle thoroughly and remove all labels.\nStep 2: For the Fairy Light Lamp, ensure the bottle is completely dry inside.\nStep 3: Insert a string of 20-30 LED fairy lights into the bottle.\nStep 4: Arrange the cord so it exits the bottle mouth neatly.\nStep 5: Secure the battery pack discreetly near the bottle base or hide it.\nStep 6: Optionally, add decorative elements like sea glass or colored stones in the bottom.\nStep 7: Place in your desired location and adjust the light arrangement inside.\nStep 8: For an extra touch, wrap copper wire around the bottle neck as decoration.\nStep 9: Turn on the lights and enjoy your upcycled bottle lamp.",
+      tags: ["Glass Upcycle", "Lighting", "Home Decor", "Sustainable", "Bottle Craft", "Mood Lighting", "Gift Idea"],
+      imageKeywords: "glass+bottle+fairy+lights",
+      difficultyLevel: 1,
+      timeRequired: 20
     };
   }
   
@@ -292,7 +354,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "Add caster wheels to the bottom of storage units for mobility",
         "Line the inside with decorative paper or fabric for a finished look"
       ],
-      instructions: "To build a Honeycomb Modular Storage Unit: Collect 6-8 same-sized cardboard boxes (shipping boxes work well). Cut off the top and bottom flaps from each box. Measure and mark 2-inch tabs along each open edge. Score and fold these tabs inward. Apply wood glue to the tabs and connect the boxes in a honeycomb pattern, ensuring each box shares at least one side with another. Reinforce all connections with packing tape on the inside. Apply primer to the entire unit, then paint with your choice of colors. Once dry, apply 2-3 coats of clear polyurethane spray for durability. Allow to fully cure for 24 hours before use. Mount to the wall using L-brackets, or leave freestanding. Each hexagonal opening serves as a perfect shelf for books, plants, or decorative items.",
+      instructions: "Step 1: Collect 6-8 same-sized cardboard boxes (shipping boxes work well).\nStep 2: Cut off the top and bottom flaps from each box.\nStep 3: Measure and mark 2-inch tabs along each open edge.\nStep 4: Score and fold these tabs inward.\nStep 5: Apply wood glue to the tabs and connect the boxes in a honeycomb pattern.\nStep 6: Reinforce all connections with packing tape on the inside.\nStep 7: Apply primer to the entire unit, then paint with your choice of colors.\nStep 8: Once dry, apply 2-3 coats of clear polyurethane spray for durability.\nStep 9: Mount to the wall using L-brackets, or leave freestanding.",
       tags: ["Organization", "Home Storage", "Cardboard Furniture", "DIY", "Eco-friendly", "Modular", "Wall Mount"],
       imageKeywords: "honeycomb+cardboard+shelf",
       difficultyLevel: 4,
@@ -322,7 +384,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "Reinforce handles on bags with double stitching or extra layers",
         "Spray light starch on completed fabric items for a crisper finish"
       ],
-      instructions: "To create a No-Sew T-shirt Market Bag: Start with a clean, unwanted t-shirt. Lay it flat and cut off the sleeves along the seams. Next, cut out the neckline, making the opening wider - this will be the top of your bag. Turn the shirt inside out. Using fabric scissors, cut fringe strips along the bottom of the shirt, about 3-4 inches long and 1 inch wide. Tie each fringe strip to the one next to it using double knots, working your way across the entire bottom. Once all strips are tied, turn the shirt right-side out. You now have a durable, stretchy market bag perfect for groceries, gym clothes, or beach essentials. The t-shirt material is washable and surprisingly strong, capable of holding up to 15-20 pounds depending on the fabric thickness.",
+      instructions: "Step 1: Start with a clean, unwanted t-shirt.\nStep 2: Lay it flat and cut off the sleeves along the seams.\nStep 3: Cut out the neckline, making the opening wider - this will be the top of your bag.\nStep 4: Turn the shirt inside out.\nStep 5: Using fabric scissors, cut fringe strips along the bottom of the shirt, about 3-4 inches long and 1 inch wide.\nStep 6: Tie each fringe strip to the one next to it using double knots, working your way across the entire bottom.\nStep 7: Once all strips are tied, turn the shirt right-side out.\nStep 8: Trim any uneven edges or loose threads.\nStep 9: Your market bag is ready to use for groceries, gym clothes, or beach essentials.",
       tags: ["No-Sew", "T-shirt Upcycle", "Shopping Bag", "Eco-friendly", "Zero Waste", "Textile Reuse", "Beginner Friendly"],
       imageKeywords: "tshirt+tote+bag+upcycled",
       difficultyLevel: 1,
@@ -352,7 +414,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "When cutting cans, wear gloves to protect against sharp edges",
         "Add a copper wire rim at the top of cans for a decorative finish"
       ],
-      instructions: "To create Industrial Tin Can Lamp: Begin with a clean, label-free large tin can (coffee cans work well). Using a drill with a 1/8-inch metal bit, carefully drill a hole in the center of the bottom of the can for the cord. Sand any sharp edges. Mark and drill decorative patterns on the sides of the can using increasingly larger drill bits for varied sizes. Clean out any metal shavings. Spray paint the exterior with metallic or matte black spray paint designed for metal. Allow to dry completely. Insert a pendant light kit through the bottom hole, securing the socket inside the can. Add an Edison bulb for the perfect industrial look. Mount on a wooden base for stability, or create a hanging pendant by attaching chain or rope to the top rim. This lamp creates beautiful light patterns on surrounding walls when illuminated.",
+      instructions: "Step 1: Begin with a clean, label-free large tin can (coffee cans work well).\nStep 2: Using a drill with a 1/8-inch metal bit, carefully drill a hole in the center of the bottom for the cord.\nStep 3: Mark and drill decorative patterns on the sides of the can using increasingly larger drill bits.\nStep 4: Sand any sharp edges to make them smooth and safe.\nStep 5: Clean out any metal shavings.\nStep 6: Spray paint the exterior with metallic or matte black spray paint designed for metal.\nStep 7: Insert a pendant light kit through the bottom hole, securing the socket inside the can.\nStep 8: Add an Edison bulb for the perfect industrial look.\nStep 9: Mount on a wooden base for stability, or attach chain or rope to create a hanging pendant.",
       tags: ["Industrial", "Lighting", "Metal Upcycle", "Home Decor", "Rustic", "Functional", "Sustainable Design"],
       imageKeywords: "tin+can+lamp+industrial",
       difficultyLevel: 3,
@@ -382,7 +444,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "Apply several coats of polyurethane for outdoor projects to protect against elements",
         "Use wood glue in addition to screws for stronger joints"
       ],
-      instructions: "To build a Rustic Pallet Coffee Table: Start with two clean, heat-treated pallets (look for the HT stamp). Sand all surfaces thoroughly, starting with 80-grit and working up to 220-grit sandpaper. Apply wood conditioner, then stain in your choice of color. Once dry, apply three coats of polyurethane, sanding lightly between coats. Stack the pallets with the bottom one upside-down to create a storage compartment. Secure together using 3-inch wood screws at each corner. Add caster wheels to the bottom for mobility, screwing directly into the thicker support beams. For a finished look, cut a piece of plywood to size for the top surface, sand, stain, and seal to match. Attach with screws from underneath. For optional storage, add wooden crates inside the open spaces. This coffee table provides both a rustic centerpiece and practical storage for books, blankets, or remote controls.",
+      instructions: "Step 1: Start with two clean, heat-treated pallets (look for the HT stamp).\nStep 2: Sand all surfaces thoroughly, starting with 80-grit and working up to 220-grit sandpaper.\nStep 3: Apply wood conditioner, then stain in your choice of color.\nStep 4: Once dry, apply three coats of polyurethane, sanding lightly between coats.\nStep 5: Stack the pallets with the bottom one upside-down to create a storage compartment.\nStep 6: Secure together using 3-inch wood screws at each corner.\nStep 7: Add caster wheels to the bottom for mobility, screwing directly into the thicker support beams.\nStep 8: Cut a piece of plywood to size for the top surface, sand, stain, and seal to match.\nStep 9: Attach with screws from underneath and add wooden crates inside for optional storage.",
       tags: ["Pallet Furniture", "Living Room", "Rustic", "Storage Solution", "Wood Upcycle", "DIY Furniture", "Sustainable"],
       imageKeywords: "pallet+coffee+table+rustic",
       difficultyLevel: 4,
@@ -412,7 +474,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "Use a paper punch to create decorative patterns in tube sides",
         "Flatten tubes and cut into strips for weaving projects"
       ],
-      instructions: "To create Toilet Paper Roll Seed Starter Pots: Collect 15-20 empty toilet paper rolls. For each roll, make four 1-inch cuts on one end, spaced evenly around the circumference. Fold these cut sections inward like closing a box, tucking the last flap under the first to secure the bottom. Paint the exterior with non-toxic paint if desired, or leave natural. Fill each pot with seed starting soil to about 3/4 full. Plant your seeds according to package directions, usually 1/4 inch deep. Water gently and place in a sunny window or under grow lights. When seedlings are ready to transplant, simply plant the entire biodegradable pot in your garden - the cardboard will break down naturally while preventing transplant shock. Label each pot with a popsicle stick marker. These pots are perfect for starting tomatoes, peppers, herbs, and flowers.",
+      instructions: "Step 1: Collect 15-20 empty toilet paper rolls.\nStep 2: For each roll, make four 1-inch cuts on one end, spaced evenly around the circumference.\nStep 3: Fold these cut sections inward like closing a box, tucking the last flap under the first to secure the bottom.\nStep 4: Paint the exterior with non-toxic paint if desired, or leave natural.\nStep 5: Fill each pot with seed starting soil to about 3/4 full.\nStep 6: Plant your seeds according to package directions, usually 1/4 inch deep.\nStep 7: Water gently and place in a sunny window or under grow lights.\nStep 8: When seedlings are ready to transplant, plant the entire biodegradable pot in your garden.\nStep 9: Label each pot with a popsicle stick marker for easy identification.",
       tags: ["Gardening", "Seed Starting", "Biodegradable", "Zero Waste", "Spring Project", "Cardboard Upcycle", "Kid-Friendly"],
       imageKeywords: "toilet+paper+roll+seed+starters",
       difficultyLevel: 1,
@@ -442,7 +504,7 @@ function getItemSpecificIdeas(itemName: string, materialType: string) {
         "Use a bone folder to create crisp folds without damaging paper",
         "Apply mod podge between layers when laminating for a sturdy finish"
       ],
-      instructions: "To create Magazine Page Coasters: Select 20-30 full-size colorful magazine pages. Cut each page into long strips approximately 1/2 inch wide (a paper cutter works best for uniform strips). Take one strip and tightly roll it from one end to the other, adding a small dot of glue at the end to secure it. This forms your first coil. Continue rolling all your strips into tight coils. Next, arrange 7 coils in a circular pattern, with one in the center and six surrounding it. Use white glue to secure them together. Continue adding concentric circles of coils until you reach your desired coaster size (usually 4 inches in diameter). Once dry, coat both sides with three layers of mod podge, allowing drying time between coats. Finish with a clear acrylic spray sealer for water resistance. Create a set of 4-6 coasters, using complementary colors or themes from your magazine pages. These coasters are both decorative and functional, with each one being uniquely patterned.",
+      instructions: "Step 1: Select 20-30 full-size colorful magazine pages.\nStep 2: Cut each page into long strips approximately 1/2 inch wide using a paper cutter.\nStep 3: Take one strip and tightly roll it from one end to the other, adding a small dot of glue at the end.\nStep 4: Continue rolling all your strips into tight coils.\nStep 5: Arrange 7 coils in a circular pattern, with one in the center and six surrounding it.\nStep 6: Use white glue to secure them together.\nStep 7: Continue adding concentric circles of coils until you reach your desired coaster size.\nStep 8: Coat both sides with three layers of mod podge, allowing drying time between coats.\nStep 9: Finish with a clear acrylic spray sealer for water resistance and create a set of 4-6 coasters.",
       tags: ["Paper Craft", "Home Decor", "Upcycled", "Coasters", "Eco-friendly", "Colorful", "Magazine Reuse"],
       imageKeywords: "magazine+coasters+recycled",
       difficultyLevel: 2,
