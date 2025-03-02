@@ -35,14 +35,21 @@ const IdeaDetail = () => {
       instructions: ideaData.howTo,
       timeRequired: ideaData.timeRequired,
       difficultyLevel: ideaData.difficultyLevel,
-      tags: ideaData.tags,
+      tags: ideaData.tags || [],
       isMainIdea: true
     };
     
     const combinedIdeas = [mainIdea];
     
     if (ideaData.relatedIdeas && ideaData.relatedIdeas.length > 0) {
-      combinedIdeas.push(...ideaData.relatedIdeas);
+      // Add isMainIdea: false to each related idea
+      const formattedRelatedIdeas = ideaData.relatedIdeas.map(idea => ({
+        ...idea,
+        tags: idea.tags || [],
+        isMainIdea: false
+      }));
+      
+      combinedIdeas.push(...formattedRelatedIdeas);
     }
     
     setAllIdeas(combinedIdeas);
