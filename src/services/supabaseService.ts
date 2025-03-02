@@ -30,6 +30,8 @@ export interface SearchResult {
   timeRequired?: number | null;
   difficultyLevel?: number | null;
   tags?: string[];
+  imageUrl?: string;
+  isAiGenerated?: boolean;
   similarItems?: {
     id: string;
     name: string;
@@ -89,8 +91,8 @@ export const getItemsByMaterialType = async (materialType: string): Promise<Recy
 export const generateRecyclingIdea = async (material?: string): Promise<SearchResult | null> => {
   try {
     const materialTypes = [
-      "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", "Organic", 
-      "Wood", "Cardboard", "Rubber", "Composite"
+      "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
+      "Organic", "Wood", "Cardboard", "Rubber", "Composite"
     ];
     
     const materialType = material || materialTypes[Math.floor(Math.random() * materialTypes.length)];
@@ -189,6 +191,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         description, 
         material_type,
         difficulty_level,
+        image_url,
         ideas:items_ideas(
           idea_id,
           ideas:idea_id(
@@ -198,6 +201,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
             instructions,
             time_required,
             difficulty_level,
+            cover_image_url,
             tags:ideas_tags(
               tags:tag_id(
                 name
@@ -221,6 +225,8 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
     }
 
     console.log("Exact matches:", exactMatches);
+
+    const aiIdeas = await generateMultipleAiIdeas(query, materialType, 6);
 
     if (exactMatches && exactMatches.length > 0) {
       const item = exactMatches[0];
@@ -251,6 +257,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
                   instructions: idea.instructions,
                   timeRequired: idea.time_required,
                   difficultyLevel: idea.difficulty_level,
+                  imageUrl: idea.cover_image_url,
                   tags: tags.length > 0 ? tags : undefined
                 };
                 
@@ -268,7 +275,7 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
       }
       
       if (mainIdea) {
-        return {
+        const result: SearchResult = {
           itemName: item.name,
           materialType: item.material_type,
           ideaTitle: mainIdea.title,
@@ -278,13 +285,29 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
           timeRequired: mainIdea.timeRequired,
           difficultyLevel: mainIdea.difficultyLevel,
           tags: mainIdea.tags,
-          relatedIdeas: relatedIdeas,
+          imageUrl: mainIdea.imageUrl || item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
+          relatedIdeas: [
+            ...relatedIdeas,
+            ...aiIdeas.map(aiIdea => ({
+              id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              title: aiIdea.ideaTitle || '',
+              description: aiIdea.suggestions,
+              instructions: aiIdea.howTo,
+              timeRequired: aiIdea.timeRequired || null,
+              difficultyLevel: aiIdea.difficultyLevel || null,
+              tags: aiIdea.tags,
+              imageUrl: aiIdea.imageUrl,
+              isAiGenerated: true
+            }))
+          ],
           similarItems: exactMatches.map(match => ({
             id: match.id,
             name: match.name,
             materialType: match.material_type
           }))
         };
+        
+        return result;
       }
       
       return {
@@ -299,6 +322,18 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         howTo: item.description || `This is a ${item.material_type} item that may be recyclable depending on your local facilities.`,
         isGeneric: true,
         difficultyLevel: item.difficulty_level,
+        imageUrl: item.image_url || `https://source.unsplash.com/random?${item.material_type.toLowerCase()},${item.name.toLowerCase()}`,
+        relatedIdeas: aiIdeas.map(aiIdea => ({
+          id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          title: aiIdea.ideaTitle || '',
+          description: aiIdea.suggestions,
+          instructions: aiIdea.howTo,
+          timeRequired: aiIdea.timeRequired || null,
+          difficultyLevel: aiIdea.difficultyLevel || null,
+          tags: aiIdea.tags,
+          imageUrl: aiIdea.imageUrl,
+          isAiGenerated: true
+        })),
         similarItems: exactMatches.map(match => ({
           id: match.id,
           name: match.name,
@@ -313,7 +348,8 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         id, 
         name, 
         material_type,
-        difficulty_level
+        difficulty_level,
+        image_url
       `);
     
     if (materialType) {
@@ -343,6 +379,18 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         ],
         howTo: `${similarMatches[0].material_type} materials can often be recycled, but may require special handling. Always follow your local recycling guidelines for proper disposal.`,
         isGeneric: true,
+        imageUrl: similarMatches[0].image_url || `https://source.unsplash.com/random?${similarMatches[0].material_type.toLowerCase()},recycling`,
+        relatedIdeas: aiIdeas.map(aiIdea => ({
+          id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          title: aiIdea.ideaTitle || '',
+          description: aiIdea.suggestions,
+          instructions: aiIdea.howTo,
+          timeRequired: aiIdea.timeRequired || null,
+          difficultyLevel: aiIdea.difficultyLevel || null,
+          tags: aiIdea.tags,
+          imageUrl: aiIdea.imageUrl,
+          isAiGenerated: true
+        })),
         similarItems: [
           {
             id: similarMatches[0].id,
@@ -364,10 +412,62 @@ export const searchRecyclingItems = async (query: string, materialType?: string)
         "For electronics, look for e-waste recycling programs in your area"
       ],
       howTo: "Always check with your local recycling guidelines to ensure proper disposal of items that cannot be repurposed.",
-      isGeneric: true
+      isGeneric: true,
+      imageUrl: `https://source.unsplash.com/random?recycling,${query.toLowerCase()}`,
+      relatedIdeas: aiIdeas.map(aiIdea => ({
+        id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        title: aiIdea.ideaTitle || '',
+        description: aiIdea.suggestions,
+        instructions: aiIdea.howTo,
+        timeRequired: aiIdea.timeRequired || null,
+        difficultyLevel: aiIdea.difficultyLevel || null,
+        tags: aiIdea.tags,
+        imageUrl: aiIdea.imageUrl,
+        isAiGenerated: true
+      }))
     };
   } catch (error) {
     console.error('Error in searchRecyclingItems:', error);
     return null;
   }
+};
+
+const generateMultipleAiIdeas = async (
+  query: string, 
+  materialType?: string, 
+  count: number = 6
+): Promise<SearchResult[]> => {
+  const ideas: SearchResult[] = [];
+  
+  let material = materialType;
+  if (!material) {
+    const materialTypes = [
+      "Plastic", "Paper", "Glass", "Metal", "Textile", "Electronic", 
+      "Organic", "Wood", "Cardboard", "Rubber", "Composite"
+    ];
+    
+    material = materialTypes.find(m => query.toLowerCase().includes(m.toLowerCase()));
+    
+    if (!material) {
+      material = materialTypes[Math.floor(Math.random() * materialTypes.length)];
+    }
+  }
+  
+  for (let i = 0; i < count; i++) {
+    let itemName = query;
+    
+    const result = await generateRecyclingIdea(material);
+    
+    if (result) {
+      result.itemName = itemName;
+      
+      if (!ideas.some(idea => idea.ideaTitle === result.ideaTitle)) {
+        ideas.push(result);
+      } else {
+        i -= 1;
+      }
+    }
+  }
+  
+  return ideas;
 };
